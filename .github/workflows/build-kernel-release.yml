@@ -23,6 +23,7 @@ on:
           - OOS16
           - OOS15
           - OOS14
+          - OP15
           - android16-6.12
           - android15-6.6
           - android14-6.1
@@ -153,6 +154,9 @@ jobs:
               ;;
             OOS14)
               jq_filter="map(select(.os_version == \"OOS14\"))"
+              ;;
+            OP15)
+              jq_filter="map(select(.model == \"$input\"))"
               ;;
             android*-*.*)
               # Extract android version and kernel version
