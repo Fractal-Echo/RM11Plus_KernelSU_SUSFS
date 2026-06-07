@@ -1946,6 +1946,9 @@ runs:
         cd "$AK3_FOLDER"
         
         sed -i 's/do.check_boot_version=.*/do.check_boot_version=1/' anykernel.sh
+        if ! grep -q '6\.12\*) ksu_supported=true' anykernel.sh; then
+          sed -i '/6\.6\*) ksu_supported=true ;;/a\    6.12*) ksu_supported=true ;;' anykernel.sh
+        fi
         
         ZIP_MODEL=$(echo "$OP_MODEL" | sed 's/-[0-9]\+\.[0-9]\+\.[0-9]\+$//')
         if [ "${{ env.OP_SUSFS }}" = true ]; then
