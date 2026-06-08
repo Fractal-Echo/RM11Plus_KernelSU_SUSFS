@@ -103,6 +103,7 @@ This fork includes the tested NX809J packaging flow and DroidSpaces notes used f
 - [DroidSpaces audio bridge](docs/nx809j-droidspaces-audio.md)
 - [DroidSpaces Adreno 840 GPU notes](docs/nx809j-droidspaces-gpu.md)
 - [Adreno 840 upstream tracking order](docs/nx809j-gpu-upstream-tracking.md)
+- [Fedora 43 Adreno 840 GPU report for developers](docs/nx809j-fedora-gpu-report-to-dev.md)
 - Audio helper scripts: `tools/nx809j/audio/`
 - GPU helper scripts: `tools/nx809j/gpu/`
 
