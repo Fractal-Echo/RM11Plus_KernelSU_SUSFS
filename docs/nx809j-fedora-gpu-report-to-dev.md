@@ -134,6 +134,30 @@ OpenGL renderer string: Adreno (TM) 840
 Accelerated: yes
 ```
 
+## New Runtime Issue Observed
+
+After using the Fedora KDE/Plasma session with GPU acceleration, the desktop background/system area became black. The browser window remained visible, but the rest of the desktop/shell appeared broken or black.
+
+Observed symptom:
+
+```text
+Desktop/system background turned black.
+Browser stayed visible.
+The rest of the screen/compositor appeared broken.
+```
+
+This looks like a graphics/compositor/driver runtime failure rather than a full container crash. A likely explanation is that the GPU driver path, swapchain, or compositor rendering path partially failed after running for a while.
+
+Processes should be checked after this happens:
+
+```text
+startplasma-x11
+kwin_x11
+plasmashell
+```
+
+If these processes remain alive while the screen is black, the issue is probably in the graphics presentation/compositor path rather than the whole desktop session exiting.
+
 ## Networking Issue Found And Fixed Manually
 
 The Fedora container initially had no internet because `eth0` was up but had no IP address and no default route.
@@ -203,6 +227,8 @@ Acceleration: yes
 The remaining issues to investigate are:
 
 - Mesa KGSL warning: `kgsl_pipe_get_param: invalid param id: 13`
+- Black desktop/background after GPU-accelerated runtime while browser remains visible
+- Possible driver/compositor presentation failure after the GPU path has been active
 - Whether this remains stable in browser/video workloads
 - Persistent network setup for Fedora container
 - Whether `enable_hw_access=0` should be changed or documented for this GPU path
