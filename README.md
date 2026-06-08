@@ -105,6 +105,13 @@ This fork includes the tested NX809J packaging flow and DroidSpaces notes used f
 - Audio helper scripts: `tools/nx809j/audio/`
 - GPU helper scripts: `tools/nx809j/gpu/`
 
+Current NX809J DroidSpaces graphics status:
+
+- Stable mode: software rendering via `llvmpipe`
+- Container config: `enable_gpu_mode=0` and `enable_virgl=0`
+- Hardware mode: Adreno 840 Turnip/Zink detects correctly, but is not stable for Plasma/Termux:X11 yet
+- Browser/video status: keep software rendering for YouTube/browser sessions until the black-screen crash is fixed
+
 ---
 
 ## 🌟 Special Thanks

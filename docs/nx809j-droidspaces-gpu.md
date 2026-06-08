@@ -36,12 +36,22 @@ driverInfo = Mesa 26.2.0-devel
 
 Do not enable this package for the main Plasma session yet. On NX809J it passed `glxinfo`, `vulkaninfo`, and a short `glxgears` run, but the real Termux:X11 desktop later fell back to a black screen.
 
+The device is currently kept in software rendering mode for stability.
+
 The stable recovery state is:
 
 - `enable_gpu_mode=0`
 - `enable_virgl=0`
 - Freedreno Vulkan ICD JSON files moved out of `/usr/share/vulkan/icd.d`
 - OpenGL renderer: `llvmpipe`
+- `Accelerated: no`
+
+The current validation output should look like:
+
+```text
+OpenGL renderer string: llvmpipe (LLVM 20.1.8, 128 bits)
+Accelerated: no
+```
 
 The package is still useful for isolated driver testing, but should not be used as the default browser/desktop path until the Termux:X11/Plasma crash is understood.
 
@@ -136,3 +146,5 @@ enable_virgl=0
 ```
 
 Restart the DroidSpaces container after changing these values.
+
+The helper script `tools/nx809j/gpu/recover-software-rendering.sh` can be run inside the Ubuntu container to move the Freedreno ICD files out of the active Vulkan path and force Mesa's dynamic linker cache to refresh.
