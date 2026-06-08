@@ -119,6 +119,10 @@ Current NX809J DroidSpaces graphics status:
 - Hardware mode: Adreno 840 Turnip/Zink detects correctly, but is not stable for Plasma/Termux:X11 yet
 - Browser/video status: keep software rendering for YouTube/browser sessions until the black-screen crash is fixed
 
+RedMagic 11 Pro NX809J DroidSpaces screenshot:
+
+![RedMagic 11 Pro NX809J running DroidSpaces XFCE](docs/assets/redmagic11pro-droidspaces-current.png)
+
 Recommended upstream tracking order for the Adreno 840 graphics issue:
 
 1. [lfdevs/mesa-for-android-container releases](https://github.com/lfdevs/mesa-for-android-container/releases)
