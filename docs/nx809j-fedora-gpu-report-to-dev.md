@@ -158,6 +158,47 @@ plasmashell
 
 If these processes remain alive while the screen is black, the issue is probably in the graphics presentation/compositor path rather than the whole desktop session exiting.
 
+Additional live diagnosis after the black desktop issue:
+
+```text
+Termux:X11: alive
+DroidSpaces Fedora container: alive
+startplasma-x11: alive
+kwin_x11: alive
+Chromium: alive
+Browser window: still visible
+Desktop/background: black
+```
+
+Chromium reported a GPU process failure:
+
+```text
+GPU process exited unexpectedly: exit_code=9
+```
+
+After the failure, Chromium continued running with fallback flags visible in the process list:
+
+```text
+--use-gl=disabled
+--disable-gpu-compositing
+```
+
+At the same time, the GPU still responded through `glxinfo`:
+
+```text
+OpenGL vendor string: freedreno
+OpenGL renderer string: Adreno (TM) 840
+Accelerated: yes
+```
+
+This suggests the whole GPU driver did not fully die. The more likely failure is in browser GPU process handling, compositor/presentation, swapchain, or Plasma/KWin interaction after GPU acceleration has been active for browser/video workloads.
+
+Short report sentence:
+
+```text
+Fedora 43 + KDE/Plasma can render on Adreno 840 via freedreno/KGSL, but after Chromium/YouTube usage the desktop background turns black while the browser remains visible. Chromium reports GPU process exit_code=9 and falls back to --use-gl=disabled / --disable-gpu-compositing. glxinfo still reports Adreno 840 accelerated after the issue.
+```
+
 ## Networking Issue Found And Fixed Manually
 
 The Fedora container initially had no internet because `eth0` was up but had no IP address and no default route.
