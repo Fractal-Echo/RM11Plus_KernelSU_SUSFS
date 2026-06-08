@@ -102,6 +102,7 @@ This fork includes the tested NX809J packaging flow and DroidSpaces notes used f
 - [DroidSpaces daemon and init notes](docs/redmagic11pro-droidspaces.md)
 - [DroidSpaces audio bridge](docs/nx809j-droidspaces-audio.md)
 - [DroidSpaces Adreno 840 GPU notes](docs/nx809j-droidspaces-gpu.md)
+- [Adreno 840 upstream tracking order](docs/nx809j-gpu-upstream-tracking.md)
 - Audio helper scripts: `tools/nx809j/audio/`
 - GPU helper scripts: `tools/nx809j/gpu/`
 
@@ -111,6 +112,14 @@ Current NX809J DroidSpaces graphics status:
 - Container config: `enable_gpu_mode=0` and `enable_virgl=0`
 - Hardware mode: Adreno 840 Turnip/Zink detects correctly, but is not stable for Plasma/Termux:X11 yet
 - Browser/video status: keep software rendering for YouTube/browser sessions until the black-screen crash is fixed
+
+Recommended upstream tracking order for the Adreno 840 graphics issue:
+
+1. [lfdevs/mesa-for-android-container releases](https://github.com/lfdevs/mesa-for-android-container/releases)
+2. [Mesa upstream: Freedreno, Turnip, Zink](https://gitlab.freedesktop.org/mesa/mesa)
+3. [Termux:X11 issues](https://github.com/termux/termux-x11/issues)
+4. [Termux packages](https://github.com/termux/termux-packages)
+5. [DroidSpaces OSS](https://github.com/ravindu644/Droidspaces-OSS)
 
 ---
 
