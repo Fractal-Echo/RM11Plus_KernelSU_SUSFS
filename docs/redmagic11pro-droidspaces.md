@@ -26,3 +26,4 @@ The Goldzxcbug 6.12.23 images are useful as Droidspaces/NTSync references, but t
 Packaging and release reproduction notes:
 
 - [RedMagic 11 Pro NX809J Packaging Guide](nx809j-packaging.md)
+- [RedMagic 11 Pro NX809J DroidSpaces Audio](nx809j-droidspaces-audio.md)

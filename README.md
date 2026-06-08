@@ -94,6 +94,17 @@ You can also find Installation instructions in the release notes.
 
 ---
 
+## RedMagic 11 Pro NX809J Notes
+
+This fork includes the tested NX809J packaging flow and DroidSpaces notes used for the RedMagic 11 Pro:
+
+- [NX809J packaging guide](docs/nx809j-packaging.md)
+- [DroidSpaces daemon and init notes](docs/redmagic11pro-droidspaces.md)
+- [DroidSpaces audio bridge](docs/nx809j-droidspaces-audio.md)
+- Audio helper scripts: `tools/nx809j/audio/`
+
+---
+
 ## 🌟 Special Thanks
 
 **These amazing people help make this project possible! ❤️**
@@ -141,7 +152,7 @@ If you encounter any issues or need help, feel free to:
 
 Any and all donations are appreciated!
 
-PayPal: [paypal.me/fatalcoder524](https://paypal.me/fatalcoder524)
+PayPal: available on request
 
 DM on Telegram for UPI donations!
 
