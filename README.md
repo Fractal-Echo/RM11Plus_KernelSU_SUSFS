@@ -110,6 +110,7 @@ DroidSpaces rootfs / operating system download sources:
 
 - KDE rootfs: [Goldzxcbug/Droidspaces-rootfs-KDE-builder](https://github.com/Goldzxcbug/Droidspaces-rootfs-KDE-builder)
 - XFCE rootfs release: [Droidspaces-rootfs-builder v20260607-171942](https://github.com/Droidspaces/Droidspaces-rootfs-builder/releases/tag/v20260607-171942)
+- Latest DroidSpaces APK CI channel: [Telegram DroidspacesCI](https://t.me/DroidspacesCI/504?single)
 
 Current NX809J DroidSpaces graphics status:
 
