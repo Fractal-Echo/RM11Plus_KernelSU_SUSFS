@@ -101,7 +101,9 @@ This fork includes the tested NX809J packaging flow and DroidSpaces notes used f
 - [NX809J packaging guide](docs/nx809j-packaging.md)
 - [DroidSpaces daemon and init notes](docs/redmagic11pro-droidspaces.md)
 - [DroidSpaces audio bridge](docs/nx809j-droidspaces-audio.md)
+- [DroidSpaces Adreno 840 GPU notes](docs/nx809j-droidspaces-gpu.md)
 - Audio helper scripts: `tools/nx809j/audio/`
+- GPU helper scripts: `tools/nx809j/gpu/`
 
 ---
 
