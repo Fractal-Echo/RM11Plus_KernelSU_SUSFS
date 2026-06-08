@@ -106,9 +106,10 @@ This fork includes the tested NX809J packaging flow and DroidSpaces notes used f
 - Audio helper scripts: `tools/nx809j/audio/`
 - GPU helper scripts: `tools/nx809j/gpu/`
 
-DroidSpaces KDE rootfs / operating system download source:
+DroidSpaces rootfs / operating system download sources:
 
-- [Goldzxcbug/Droidspaces-rootfs-KDE-builder](https://github.com/Goldzxcbug/Droidspaces-rootfs-KDE-builder)
+- KDE rootfs: [Goldzxcbug/Droidspaces-rootfs-KDE-builder](https://github.com/Goldzxcbug/Droidspaces-rootfs-KDE-builder)
+- XFCE rootfs release: [Droidspaces-rootfs-builder v20260607-171942](https://github.com/Droidspaces/Droidspaces-rootfs-builder/releases/tag/v20260607-171942)
 
 Current NX809J DroidSpaces graphics status:
 
