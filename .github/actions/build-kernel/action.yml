@@ -1058,9 +1058,10 @@ runs:
               cd "$KSUN_FOLDER"
               patch -p1 --forward < "$SUSFS_FOLDER/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch" || true
               
-              # Dynamically write the missing fix_dispatch.c.patch
-              echo "Creating missing fix_dispatch.c.patch dynamically..."
+              # Dynamically write the missing fix_dispatch.c.patch, fix_app_profile.c.patch, and fix_boot_event.c.patch
+              echo "Creating missing fix patches dynamically..."
               mkdir -p "$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version"
+
               PATCH_FILE="$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version/fix_dispatch.c.patch"
               echo 'diff --git a/kernel/supercall/dispatch.c b/kernel/supercall/dispatch.c' > $PATCH_FILE
               echo 'index a352b2b1..950a9df4 100644' >> $PATCH_FILE
@@ -1074,6 +1075,50 @@ runs:
               echo '+#include <linux/susfs.h>' >> $PATCH_FILE
               echo ' ' >> $PATCH_FILE
               echo ' #include "uapi/supercall.h"' >> $PATCH_FILE
+
+              PATCH_FILE="$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version/fix_app_profile.c.patch"
+              echo 'diff --git a/kernel/policy/app_profile.c b/kernel/policy/app_profile.c' > $PATCH_FILE
+              echo 'index f30f6071..7a627cd8 100644' >> $PATCH_FILE
+              echo '--- a/kernel/policy/app_profile.c' >> $PATCH_FILE
+              echo '+++ b/kernel/policy/app_profile.c' >> $PATCH_FILE
+              echo '@@ -118,11 +118,6 @@ int escape_with_root_profile(void)' >> $PATCH_FILE
+              echo '         return -ENOMEM;' >> $PATCH_FILE
+              echo '     }' >> $PATCH_FILE
+              echo ' ' >> $PATCH_FILE
+              echo '-    if (cred->euid.val == 0) {' >> $PATCH_FILE
+              echo '-        pr_warn("Already root, don'\''t escape!\n");' >> $PATCH_FILE
+              echo '-        goto out_abort_creds;' >> $PATCH_FILE
+              echo '-    }' >> $PATCH_FILE
+              echo '-' >> $PATCH_FILE
+              echo '     profile = ksu_get_root_profile(cred->uid.val);' >> $PATCH_FILE
+              echo ' ' >> $PATCH_FILE
+              echo '     cred->uid.val = profile->uid;' >> $PATCH_FILE
+              echo '@@ -180,9 +175,8 @@ int escape_with_root_profile(void)' >> $PATCH_FILE
+              echo ' ' >> $PATCH_FILE
+              echo '     commit_creds(cred);' >> $PATCH_FILE
+              echo ' ' >> $PATCH_FILE
+              echo '-    disable_seccomp();' >> $PATCH_FILE
+              echo '-' >> $PATCH_FILE
+              echo '-    for_each_thread (p, t) {' >> $PATCH_FILE
+              echo '-        ksu_set_task_tracepoint_flag(t);' >> $PATCH_FILE
+              echo '-    }' >> $PATCH_FILE
+              echo '+    if (likely(test_thread_flag(TIF_SECCOMP)))' >> $PATCH_FILE
+              echo '+        disable_seccomp();' >> $PATCH_FILE
+              echo ' ' >> $PATCH_FILE
+              echo '     setup_mount_ns(profile->namespaces);' >> $PATCH_FILE
+              echo '     ksu_put_root_profile(profile);' >> $PATCH_FILE
+
+              PATCH_FILE="$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version/fix_boot_event.c.patch"
+              echo 'diff --git a/kernel/runtime/boot_event.c b/kernel/runtime/boot_event.c' > $PATCH_FILE
+              echo '--- a/kernel/runtime/boot_event.c' >> $PATCH_FILE
+              echo '+++ b/kernel/runtime/boot_event.c' >> $PATCH_FILE
+              echo '@@ -13,6 +13,7 @@' >> $PATCH_FILE
+              echo ' ' >> $PATCH_FILE
+              echo ' bool ksu_module_mounted __read_mostly = false;' >> $PATCH_FILE
+              echo ' bool ksu_boot_completed __read_mostly = false;' >> $PATCH_FILE
+              echo '+extern struct static_key_true ksu_is_input_hook_enabled;' >> $PATCH_FILE
+              echo ' ' >> $PATCH_FILE
+              echo ' extern void ksu_avc_spoof_late_init(void);' >> $PATCH_FILE
 
               for file in $(find ./kernel -maxdepth 2 -name "*.rej" -exec basename {} .rej \;); do
                 echo "Patching file: $file with fix_$file.patch"
