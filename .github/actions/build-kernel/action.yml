@@ -2074,8 +2074,8 @@ runs:
         fi
         
         # Disable Module Signature Verification to allow loading unsigned modules
-        if [ "$OP_MODEL" = "OP15" ]; then
-          echo "Disabling module signature verification for OP15..."
+        if [ "$OP_MODEL" = "OP15" ] || [ "$OP_MODEL" = "OPNX809J" ]; then
+          echo "Disabling module signature verification for $OP_MODEL..."
           scripts/config --file "$OUT/.config" -d MODULE_SIG
           scripts/config --file "$OUT/.config" -d MODULE_SIG_FORCE
           scripts/config --file "$OUT/.config" -d MODULE_SIG_ALL
