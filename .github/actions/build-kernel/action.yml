@@ -97,7 +97,7 @@ runs:
         echo "ACTION_REPO=$ACTION_REPO_VAL" >> $GITHUB_ENV
         echo "ACTION_REF=$ACTION_REF_VAL" >> $GITHUB_ENV
 
-    - name: 📥 Checkout Code
+    - name: ðŸ“¥ Checkout Code
       uses: actions/checkout@v6
       with:
         repository: ${{ env.ACTION_REPO }}
@@ -293,7 +293,7 @@ runs:
           echo "::error::Input validation failed. See logs for details."
           exit 1
         else
-          echo "✅ Input validation passed"
+          echo "âœ… Input validation passed"
         fi
         echo "::endgroup::"
 
@@ -417,13 +417,13 @@ runs:
           fi
         } >> "$GITHUB_ENV"
         
-        echo "✅ Detected: $ANDROID_VERSION-$FULL_VERSION"
+        echo "âœ… Detected: $ANDROID_VERSION-$FULL_VERSION"
         if [ "${{ env.OP_SUSFS }}" = true ]; then
           echo "   SUSFS Branch: gki-$ANDROID_VERSION-$VERSION.$PATCHLEVEL"
         fi
         echo "::endgroup::"
 
-    - name: 🏷️ Set Build Identity (Hardcoded)
+    - name: ðŸ·ï¸ Set Build Identity (Hardcoded)
       shell: bash
       run: |
         set -euo pipefail
@@ -436,7 +436,7 @@ runs:
         echo "BUILD_HOST=$BUILD_HOST" >> "$GITHUB_ENV"
         
         echo ""
-        echo "✅ Build identity configured:"
+        echo "âœ… Build identity configured:"
         echo "   User: $BUILD_USER"
         echo "   Host: $BUILD_HOST"
         echo "::endgroup::"
@@ -550,16 +550,16 @@ runs:
         
         if [ -z "$short" ]; then
           short="$("${CLANG_BIN}/clang" --version | sha256sum | cut -c1-8)"
-          echo "⚠️ Could not extract clang-r version, using hash: $short"
+          echo "âš ï¸ Could not extract clang-r version, using hash: $short"
         else
-          echo "✅ Clang version fingerprint: $short"
+          echo "âœ… Clang version fingerprint: $short"
         fi
         
         echo "CLANG_VERSION_SHORT=$short" >> "$GITHUB_ENV"
         echo "$CLANG_BIN" >> $GITHUB_PATH
         echo "LIBCLANG_PATH=$CLANG_BIN/../lib" >> "$GITHUB_ENV"
         
-        echo "✅ Detected Clang: $CLANG_VERSION"
+        echo "âœ… Detected Clang: $CLANG_VERSION"
         echo "::endgroup::"
 
     - name: Check or Detect Rust & bindgen
@@ -615,7 +615,7 @@ runs:
         echo "RUSTC_VERSION=$RUSTC_VERSION" >> "$GITHUB_ENV"
         echo "RUSTC=$RUSTC_BIN/rustc" >> "$GITHUB_ENV"
         echo "$RUSTC_BIN" >> $GITHUB_PATH
-        echo "✅ Detected RUSTC: $RUSTC_VERSION"
+        echo "âœ… Detected RUSTC: $RUSTC_VERSION"
         
         if [ "$BINDGEN_FOUND" = true ]; then
           echo "BINDGEN_BIN_PATH=$BINDGEN_BIN" >> "$GITHUB_ENV"
@@ -623,7 +623,7 @@ runs:
           echo "BINDGEN_VERSION=$BINDGEN_VERSION" >> "$GITHUB_ENV"
           echo "$BINDGEN_BIN" >> $GITHUB_PATH
           echo "BINDGEN=$BINDGEN_BIN/bindgen" >> "$GITHUB_ENV"
-          echo "✅ Detected BINDGEN: $BINDGEN_VERSION"
+          echo "âœ… Detected BINDGEN: $BINDGEN_VERSION"
         fi
         
         echo "::endgroup::"
@@ -700,7 +700,7 @@ runs:
         ccache -p
         
         if [ -d "$CCACHE_DIR" ] && find "$CCACHE_DIR" -type f -print -quit 2>/dev/null | grep -q .; then
-          echo "✅ Restored cache found"
+          echo "âœ… Restored cache found"
           echo ""
           echo "Pre-build cache statistics:"
           ccache -s | head -n 20
@@ -708,7 +708,7 @@ runs:
           echo "Updating atime to achive cache eviction"
           find ${{ env.CCACHE_DIR }} -type f -exec touch -t $(date -d "1 day ago" +%Y%m%d%H%M) {} +
         else
-          echo "⚠️ No existing cache - building from scratch"
+          echo "âš ï¸ No existing cache - building from scratch"
           echo "Cache will be populated for future builds"
         fi
         
@@ -741,11 +741,11 @@ runs:
           if [ -z "$SUSFS_INPUT" ]; then
             # use kernel-specific default
             SUSFS_BRANCH="${DEFAULT_SUSFS[$KERNEL_KEY]:-gki-android15-6.6}"
-            echo "ℹ️  Using default SUSFS branch for $KERNEL_KEY: $SUSFS_BRANCH"
+            echo "â„¹ï¸  Using default SUSFS branch for $KERNEL_KEY: $SUSFS_BRANCH"
           else
             # 40-char hash or branch/commit passed directly
             SUSFS_BRANCH="$SUSFS_INPUT"
-            echo "🔧 Using resolved SUSFS ref: $SUSFS_BRANCH"
+            echo "ðŸ”§ Using resolved SUSFS ref: $SUSFS_BRANCH"
           fi
         fi
         
@@ -789,13 +789,13 @@ runs:
               if aria2c -x16 -s16 -j16 -k1M --retry-wait=2 --max-tries=5 -d "/dev/shm" -o "$archive_name" --allow-overwrite=true "${aria2_headers[@]}" $aria_log_flags "$download_url"; then
                   mkdir -p "$repo_name"
                   if tar -I "pigz -p $nproc -b 256" -x --record-size=1M -f "$shm_path" -C "$repo_name" --strip-components=1 --no-same-owner; then
-                      echo "✅ Success: $repo_name synced"
+                      echo "âœ… Success: $repo_name synced"
                       rm -f "$shm_path"
                       return 0
                   fi
               fi
               
-              echo "⚠️ Attempt $attempt failed, clearing RAM and retrying..."
+              echo "âš ï¸ Attempt $attempt failed, clearing RAM and retrying..."
               rm -rf "$repo_name" "$shm_path" 2>/dev/null
               sleep 5
               attempt=$((attempt + 1))
@@ -820,20 +820,20 @@ runs:
           fi
           
           while [ $attempt -le $max_attempts ]; do
-            echo "🔄 Attempt $attempt/$max_attempts: cloning $url ($branch)${depth:+ [depth=$depth]}"
+            echo "ðŸ”„ Attempt $attempt/$max_attempts: cloning $url ($branch)${depth:+ [depth=$depth]}"
             
             # Clone with dynamic args
             git clone "${clone_args[@]}" "$url" "$dir" && {
-              echo "✅ Success"
+              echo "âœ… Success"
               return 0
             }
             
-            echo "❌ Failed, cleaning up..."
+            echo "âŒ Failed, cleaning up..."
             rm -rf "$dir" 2>/dev/null
             sleep $((attempt++ * 5))
           done
           
-          echo "💥 All attempts failed"
+          echo "ðŸ’¥ All attempts failed"
           return 1
         }
         
@@ -847,7 +847,7 @@ runs:
           fi
           echo "SUSFS_COMMIT_SHA=$SUSFS_BRANCH" >> $GITHUB_ENV
         fi
-        echo "✅ Dependencies cloned"
+        echo "âœ… Dependencies cloned"
         echo "::endgroup::"
 
     - name: Clean Up ABI Protected Exports
@@ -870,9 +870,9 @@ runs:
         echo "Adding KernelSU Next..."
         KSU_INPUT="${{ inputs.ksu_branch_or_hash }}"
         if [ -z "$KSU_INPUT" ]; then
-          curl --fail --location --proto '=https' -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" | bash -
+          curl --fail --location --proto '=https' -LSs "https://raw.githubusercontent.com/pershoot/KernelSU-Next/dev-susfs/kernel/setup.sh" | bash -s dev-susfs
         else
-          curl --fail --location --proto '=https' -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" | bash -s "$KSU_INPUT"
+          curl --fail --location --proto '=https' -LSs "https://raw.githubusercontent.com/pershoot/KernelSU-Next/dev-susfs/kernel/setup.sh" | bash -s "$KSU_INPUT"
         fi
         git submodule update --init --recursive
         cd KernelSU-Next/kernel
@@ -919,7 +919,7 @@ runs:
         echo "$KSU_VERSION" >> "${ARTIFACTS_FOLDER}/${OP_MODEL}_${OP_OS_VERSION}.txt"
         echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
         echo "KernelSU Next Version: $KSU_VERSION"
-        echo "✅ KernelSU Next added (commit: ${KSU_COMMIT_SHA:0:8})"
+        echo "âœ… KernelSU Next added (commit: ${KSU_COMMIT_SHA:0:8})"
         echo "::endgroup::"
 
     - name: Add KernelSU
@@ -967,7 +967,7 @@ runs:
         echo "$KSU_VERSION" >> "${ARTIFACTS_FOLDER}/${OP_MODEL}_${OP_OS_VERSION}.txt"
         echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
         echo "KernelSU Version: $KSU_VERSION"
-        echo "✅ KernelSU added (commit: ${KSU_COMMIT_SHA:0:8})"
+        echo "âœ… KernelSU added (commit: ${KSU_COMMIT_SHA:0:8})"
         echo "::endgroup::"
 
     - name: Apply SUSFS Patches
@@ -1055,90 +1055,7 @@ runs:
             ;;
           "v2.1.0")
             if [ "${{ inputs.ksu_type }}" = "KSUN" ]; then
-              cd "$KSUN_FOLDER"
-              patch -p1 --forward < "$SUSFS_FOLDER/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch" || true
-              
-              # Dynamically write the missing fix_dispatch.c.patch, fix_app_profile.c.patch, and fix_boot_event.c.patch
-              echo "Creating missing fix patches dynamically..."
-              mkdir -p "$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version"
-
-              PATCH_FILE="$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version/fix_dispatch.c.patch"
-              echo 'diff --git a/kernel/supercall/dispatch.c b/kernel/supercall/dispatch.c' > $PATCH_FILE
-              echo 'index a352b2b1..950a9df4 100644' >> $PATCH_FILE
-              echo '--- a/kernel/supercall/dispatch.c' >> $PATCH_FILE
-              echo '+++ b/kernel/supercall/dispatch.c' >> $PATCH_FILE
-              echo '@@ -4,6 +4,8 @@' >> $PATCH_FILE
-              echo ' #include <linux/string.h>' >> $PATCH_FILE
-              echo ' #include <linux/uaccess.h>' >> $PATCH_FILE
-              echo ' #include <linux/version.h>' >> $PATCH_FILE
-              echo '+#include <linux/namei.h>' >> $PATCH_FILE
-              echo '+#include <linux/susfs.h>' >> $PATCH_FILE
-              echo ' ' >> $PATCH_FILE
-              echo ' #include "uapi/supercall.h"' >> $PATCH_FILE
-
-              PATCH_FILE="$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version/fix_app_profile.c.patch"
-              echo 'diff --git a/kernel/policy/app_profile.c b/kernel/policy/app_profile.c' > $PATCH_FILE
-              echo 'index ef1611f2..7bfb0e34 100644' >> $PATCH_FILE
-              echo '--- a/kernel/policy/app_profile.c' >> $PATCH_FILE
-              echo '+++ b/kernel/policy/app_profile.c' >> $PATCH_FILE
-              echo '@@ -118,10 +118,6 @@ int escape_with_root_profile(void)' >> $PATCH_FILE
-              echo '         return -ENOMEM;' >> $PATCH_FILE
-              echo '     }' >> $PATCH_FILE
-              echo ' ' >> $PATCH_FILE
-              echo '-    if (cred->euid.val == 0) {' >> $PATCH_FILE
-              echo '-        pr_warn("Already root, don'\''t escape!\n");' >> $PATCH_FILE
-              echo '-        goto out_abort_creds;' >> $PATCH_FILE
-              echo '-    }' >> $PATCH_FILE
-              echo ' ' >> $PATCH_FILE
-              echo '     profile = ksu_get_root_profile(cred->uid.val);' >> $PATCH_FILE
-              echo ' ' >> $PATCH_FILE
-              echo '@@ -180,11 +176,8 @@ int escape_with_root_profile(void)' >> $PATCH_FILE
-              echo ' ' >> $PATCH_FILE
-              echo '     commit_creds(cred);' >> $PATCH_FILE
-              echo ' ' >> $PATCH_FILE
-              echo '-    disable_seccomp();' >> $PATCH_FILE
-              echo '-' >> $PATCH_FILE
-              echo '-    for_each_thread (p, t) {' >> $PATCH_FILE
-              echo '-        ksu_set_task_tracepoint_flag(t);' >> $PATCH_FILE
-              echo '-    }' >> $PATCH_FILE
-              echo '+    if (likely(test_thread_flag(TIF_SECCOMP)))' >> $PATCH_FILE
-              echo '+        disable_seccomp();' >> $PATCH_FILE
-              echo ' ' >> $PATCH_FILE
-              echo '     setup_mount_ns(profile->namespaces);' >> $PATCH_FILE
-              echo '     ksu_put_root_profile(profile);' >> $PATCH_FILE
-
-              PATCH_FILE="$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version/fix_boot_event.c.patch"
-              echo 'diff --git a/kernel/runtime/boot_event.c b/kernel/runtime/boot_event.c' > $PATCH_FILE
-              echo '--- a/kernel/runtime/boot_event.c' >> $PATCH_FILE
-              echo '+++ b/kernel/runtime/boot_event.c' >> $PATCH_FILE
-              echo '@@ -13,6 +13,7 @@' >> $PATCH_FILE
-              echo ' ' >> $PATCH_FILE
-              echo ' bool ksu_module_mounted __read_mostly = false;' >> $PATCH_FILE
-              echo ' bool ksu_boot_completed __read_mostly = false;' >> $PATCH_FILE
-              echo '+extern struct static_key_true ksu_is_input_hook_enabled;' >> $PATCH_FILE
-              echo ' ' >> $PATCH_FILE
-              echo ' extern void ksu_avc_spoof_late_init(void);' >> $PATCH_FILE
-
-              for file in $(find ./kernel -maxdepth 2 -name "*.rej" -exec basename {} .rej \;); do
-                echo "Patching file: $file with fix_$file.patch"
-                if [ -f "$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version/fix_$file.patch" ]; then
-                  patch -p1 --forward < "$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version/fix_$file.patch"
-                else
-                  echo "Warning: fix_$file.patch not found, skipping..."
-                fi
-              done
-              echo "Patching Hook Mode!"
-              patch -p1 --forward < "$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version/overwrite_hook_mode.patch"
-              echo "Patching KSU_TOOLKIT Support for SusFS kernel!"
-              patch -p1 --forward < "$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version/ksu_toolkit.patch"
-              if [ "$KSUVER" -le 33095 ]; then
-                echo "Patching Multi-manager Support for SusFS kernel!"
-                patch -p1 --forward < "$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version/multi_manager.patch"
-              fi
-              if [ "$KSUVER" -ge 33068 ] && [ "$KSUVER" -lt 33070 ]; then
-                echo "Patching Multi-manager sepolicy Support for SusFS kernel!"
-                patch -p1 --forward < "$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version/multi_sepolicy_fix.patch"
-              fi
+              echo "KSUN is pre-patched, skipping patching"
             else
               cd "$KSU_FOLDER"
               patch -p1 --forward < "$SUSFS_FOLDER/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch" || true
@@ -1256,7 +1173,7 @@ runs:
             fi
           fi
         fi
-        echo "✅ SUSFS patches applied"
+        echo "âœ… SUSFS patches applied"
         
         echo "Add SUSFS Configuration Settings"
         cat >> "$COMMON_KERNEL_FOLDER/arch/arm64/configs/gki_defconfig" <<EOF
@@ -1295,7 +1212,7 @@ runs:
         echo "CONFIG_BBG=y" >> common/arch/arm64/configs/gki_defconfig
         sed -i '/^config LSM$/,/^help$/{ /^[[:space:]]*default/ { /baseband_guard/! s/selinux/selinux,baseband_guard/ } }' common/security/Kconfig
         
-        echo "✅ BBG LSM added"
+        echo "âœ… BBG LSM added"
         echo "::endgroup::"
 
     - name: Apply KSU Hooks
@@ -1306,7 +1223,7 @@ runs:
         echo "::group::Apply KSU hooks"
         cd "$COMMON_KERNEL_FOLDER"
         patch -p1 < "$KERNEL_PATCHES_FOLDER/next/scope_min_manual_hooks_v1.4.patch"
-        echo "✅ KSU hooks applied"
+        echo "âœ… KSU hooks applied"
         echo "::endgroup::"
 
     - name: Apply Other Patches
@@ -1396,7 +1313,7 @@ runs:
         echo "Patching use_unlikely_wrap_cpufreq.patch"
         patch -p1 -F3 --forward < "$KERNEL_PATCHES_FOLDER/common/use_unlikely_wrap_cpufreq.patch"
         
-        echo "✅ Other patches applied"
+        echo "âœ… Other patches applied"
         echo "::endgroup::"
 
     - name: Apply NTSync Patch
@@ -1448,7 +1365,7 @@ runs:
         cat >> "$COMMON_KERNEL_FOLDER/arch/arm64/configs/gki_defconfig" <<EOF
         CONFIG_NTSYNC=y
         EOF
-        echo "✅ NTSync patch applied"
+        echo "âœ… NTSync patch applied"
         echo "::endgroup::"
 
     - name: Apply Unicode Fix Patch
@@ -1607,7 +1524,7 @@ runs:
           fi
         fi
         
-        echo "✅ Droidspaces Support applied"
+        echo "âœ… Droidspaces Support applied"
         echo "::endgroup::"
 
     - name: Add Build based configs
@@ -1669,7 +1586,7 @@ runs:
           cat << 'EOF' > "$COMMON_KERNEL_FOLDER/drivers/misc/adreno_overclock.c"
         // SPDX-License-Identifier: GPL-2.0-only
         /*
-         * adreno_overclock.c - Red Magic 11 Pro Adreno 750 Overclock (1250MHz) & Blindagem Térmica
+         * adreno_overclock.c - Red Magic 11 Pro Adreno 750 Overclock (1250MHz) & Blindagem TÃ©rmica
          *
          * This built-in driver patches the GPU power table in-memory to overclock
          * the Adreno 750 GPU from 1200MHz to 1250MHz. It also installs a kprobe-based
@@ -1716,7 +1633,7 @@ runs:
          */
         
         /* ============================================================================
-         * Thermal Shield (Blindagem Térmica)
+         * Thermal Shield (Blindagem TÃ©rmica)
          * ============================================================================
          * Hooks kgsl_pwrctrl_pwrlevel_change via kprobe. When a thermal daemon
          * requests a lower power level (higher index), we override the request
@@ -2100,18 +2017,18 @@ runs:
         export SOURCE_DATE_EPOCH=$COMMIT_TIMESTAMP
         if [ -n "${{ inputs.build_timestamp }}" ]; then
           export KBUILD_BUILD_TIMESTAMP="${{ inputs.build_timestamp }}"
-          echo "📅 Using custom build timestamp: $KBUILD_BUILD_TIMESTAMP"
+          echo "ðŸ“… Using custom build timestamp: $KBUILD_BUILD_TIMESTAMP"
         else
           export KBUILD_BUILD_TIMESTAMP="$KERNEL_BUILD_DATE"
-          echo "📅 Using current UTC build timestamp: $KBUILD_BUILD_TIMESTAMP"
+          echo "ðŸ“… Using current UTC build timestamp: $KBUILD_BUILD_TIMESTAMP"
         fi
         echo "EFFECTIVE_BUILD_TIMESTAMP=$KBUILD_BUILD_TIMESTAMP" >> "$GITHUB_ENV"
         export KBUILD_BUILD_USER="${BUILD_USER:-kernel}"
         export KBUILD_BUILD_HOST="${BUILD_HOST:-kleaf}"
         export KBUILD_BUILD_VERSION=1
-        echo "🔢 SOURCE_DATE_EPOCH: $SOURCE_DATE_EPOCH"
-        echo "👤 Build user: $KBUILD_BUILD_USER"
-        echo "🖥️  Build host: $KBUILD_BUILD_HOST"
+        echo "ðŸ”¢ SOURCE_DATE_EPOCH: $SOURCE_DATE_EPOCH"
+        echo "ðŸ‘¤ Build user: $KBUILD_BUILD_USER"
+        echo "ðŸ–¥ï¸  Build host: $KBUILD_BUILD_HOST"
         
         export CC="ccache clang"
         export CXX="ccache clang++"
@@ -2119,16 +2036,16 @@ runs:
         export HOSTCXX="ccache clang++"
         
         if [ "${{ inputs.clean }}" = "false" ]; then
-          echo "🚀 ccache-accelerated build"
+          echo "ðŸš€ ccache-accelerated build"
         else
-          echo "🧹 Clean build mode"
+          echo "ðŸ§¹ Clean build mode"
         fi
         
         OUT=out
         mkdir -p "$OUT"
         
         echo "============================================"
-        echo "🔍 Compiler & ccache Verification"
+        echo "ðŸ” Compiler & ccache Verification"
         echo "============================================"
         echo "PATH: ${PATH:0:200}..."
         echo "which clang: $(which clang)"
@@ -2198,7 +2115,7 @@ runs:
         KCPPFLAGS="$KCPPFLAGS -DCONFIG_OPTIMIZE_INLINING"
         
         echo "============================================"
-        echo "🔧 Build Configuration"
+        echo "ðŸ”§ Build Configuration"
         echo "============================================"
         echo "Device: ${OP_MODEL}"
         echo "Kernel: ${KERNEL_FULL_VER}"
@@ -2218,7 +2135,7 @@ runs:
         echo "============================================"
         
         if [ ! -d "$CCACHE_DIR" ] || [ -z "$(find "$CCACHE_DIR" -type f 2>/dev/null | head -n1)" ]; then
-          echo "🔥 Priming cache with header preprocessing..."
+          echo "ðŸ”¥ Priming cache with header preprocessing..."
           make LD="$COMMON_KERNEL_FOLDER/ld-wrapper" HOSTLD="$COMMON_KERNEL_FOLDER/ld-wrapper" -C "$COMMON_KERNEL_FOLDER" O="$OUT" headers_install prepare 2>&1 | head -n 20 || true
           echo ""
         fi
@@ -2261,19 +2178,19 @@ runs:
         IMG_SIZE=$(stat -c%s "$IMG")
         
         echo "============================================"
-        echo "✅ Build Completed Successfully"
+        echo "âœ… Build Completed Successfully"
         echo "============================================"
         echo "Duration: $((BUILD_TIME / 60))m $((BUILD_TIME % 60))s"
         echo "Image: $(numfmt --to=iec-i --suffix=B "$IMG_SIZE")"
         
         echo ""
-        echo "📊 ccache Post-Build Statistics"
+        echo "ðŸ“Š ccache Post-Build Statistics"
         echo "============================================"
         ccache -s
         echo "============================================"
         echo "::endgroup::"
 
-    - name: 📊 ccache Post-Build Statistics
+    - name: ðŸ“Š ccache Post-Build Statistics
       id: ccache_stats
       if: ${{ success() && (inputs.clean == false || inputs.clean == 'false') }}
       shell: bash
@@ -2298,7 +2215,7 @@ runs:
             mv "${{ env.CCACHE_LOGFILE }}" "$LOG_DIR/$NEW_LOG_NAME"
             echo "CCACHE_LOGFILE=$LOG_DIR/$NEW_LOG_NAME" >> $GITHUB_ENV
           else
-            echo "⚠ ccache log not found, skipping rename."
+            echo "âš  ccache log not found, skipping rename."
           fi
         fi
         
@@ -2332,7 +2249,7 @@ runs:
         
         echo "::endgroup::"
         
-        echo "## 📊 ccache Statistics" >> $GITHUB_STEP_SUMMARY
+        echo "## ðŸ“Š ccache Statistics" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo '```' >> $GITHUB_STEP_SUMMARY
         ccache -s >> $GITHUB_STEP_SUMMARY
@@ -2388,7 +2305,7 @@ runs:
         printf 'image_sha256=%s\n' "$IMG_SHA256" >> "$GITHUB_OUTPUT"
         printf 'build_time=%s\n' "$BUILD_TIME" >> "$GITHUB_OUTPUT"
         
-        echo "✅ Validation passed:"
+        echo "âœ… Validation passed:"
         echo "   - Warnings: $WARNINGS_COUNT"
         echo "   - Image size: $(numfmt --to=iec-i --suffix=B "$IMG_SIZE")"
         echo "   - SHA256: $IMG_SHA256"
@@ -2458,7 +2375,7 @@ runs:
         echo "ZIP_NAME=$ZIP_NAME" >> "$GITHUB_ENV"
         
         echo ""
-        echo "✅ Kernel ZIP created successfully"
+        echo "âœ… Kernel ZIP created successfully"
         echo "   Name: $ZIP_NAME"
         echo "   Size: $(numfmt --to=iec-i --suffix=B "$ZIP_SIZE")"
         echo "   SHA256: $ZIP_SHA256"
@@ -2521,7 +2438,7 @@ runs:
         } | tee summary.txt
         
         {
-          echo "### 🎯 Kernel Build Summary"
+          echo "### ðŸŽ¯ Kernel Build Summary"
           echo ""
           echo "| Metric | Value |"
           echo "|--------|-------|"
@@ -2558,7 +2475,7 @@ runs:
           fi
           
           echo ""
-          echo "### 🔧 OnePlus Features"
+          echo "### ðŸ”§ OnePlus Features"
           echo ""
           echo "| Feature | Status |"
           echo "|---------|--------|"
@@ -2572,7 +2489,7 @@ runs:
           echo "| **Droidspaces** | ${{ env.OP_DS }} |"
           
           echo ""
-          echo "### 📊 Build Metrics"
+          echo "### ðŸ“Š Build Metrics"
           echo ""
           echo "| Metric | Value |"
           echo "|--------|-------|"
@@ -2621,7 +2538,7 @@ runs:
         compression-level: 0
         retention-days: 90
 
-    - name: 📥 Checkout Code
+    - name: ðŸ“¥ Checkout Code
       uses: actions/checkout@v6
       if: always() && steps.build_kernel_step.conclusion == 'success'
       with:
