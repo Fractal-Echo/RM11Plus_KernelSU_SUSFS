@@ -29,6 +29,11 @@ on:
         default: false
         type: boolean
 
+env:
+  # NecessÃ¡rio para a action local conseguir se fazer checkout
+  ACTION_REPO: ${{ github.repository }}
+  ACTION_REF: ${{ github.sha }}
+
 jobs:
   build:
     name: 'Build NX809J - KSUN + SUSFS + BBR + BBG + TTL + IP_SET + Unicode + DS + NTSync'
@@ -43,6 +48,10 @@ jobs:
 
       - name: ðŸ”§ Build Kernel NX809J (SM8850 / canoe / android16-6.12)
         uses: ./.github/actions/build-kernel
+        env:
+          # Fornece ACTION_REPO e ACTION_REF para a action composta
+          ACTION_REPO: ${{ github.repository }}
+          ACTION_REF: ${{ github.sha }}
         with:
           op_config_json: |
             {
