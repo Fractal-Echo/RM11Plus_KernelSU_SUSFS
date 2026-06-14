@@ -1,0 +1,89 @@
+name: 'Build Kernel - RedMagic 11 Pro (NX809J)'
+
+on:
+  workflow_dispatch:
+    inputs:
+      ksu_branch_or_hash:
+        description: 'KernelSU-Next branch/commit (vazio = auto)'
+        required: false
+        default: ''
+      susfs_commit_hash_or_branch:
+        description: 'SUSFS branch/commit (vazio = auto)'
+        required: false
+        default: ''
+      build_timestamp:
+        description: 'Timestamp do build (vazio = agora)'
+        required: false
+        default: ''
+      optimize_level:
+        description: 'NÃ­vel de otimizaÃ§Ã£o do compilador'
+        required: false
+        default: 'O2'
+        type: choice
+        options:
+          - O2
+          - O3
+      clean:
+        description: 'Build limpo (sem cache ccache)'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  build:
+    name: 'Build NX809J - KSUN + SUSFS + BBR + BBG + TTL + IP_SET + Unicode + DS + NTSync'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+
+    steps:
+      - name: ðŸ“¥ Checkout repositÃ³rio
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: ðŸ”§ Build Kernel NX809J (SM8850 / canoe / android16-6.12)
+        uses: ./.github/actions/build-kernel
+        with:
+          op_config_json: |
+            {
+              "model": "OPNX809J",
+              "soc": "canoe",
+              "branch": "wild/sm8850",
+              "manifest": "oneplus_15_w.xml",
+              "android_version": "android16",
+              "kernel_version": "6.12",
+              "os_version": "OOS16",
+              "hmbird": "false",
+              "susfs": "true",
+              "bbg": "true",
+              "bbr": "true",
+              "ttl": "true",
+              "ip_set": "true",
+              "rust_build": "true",
+              "lto": "none",
+              "uname": "NX809J-KSUN-SUSFS",
+              "unicode": "true",
+              "c_compiler": "kernel_platform/prebuilts/clang/host/linux-x86/clang-r547379/bin",
+              "rust_compiler": "",
+              "zyc_compiler": "",
+              "bindgen": "",
+              "ds": "true",
+              "ntsync": "true"
+            }
+          ksu_type: 'KSUN'
+          ksu_branch_or_hash: ${{ inputs.ksu_branch_or_hash }}
+          susfs_commit_hash_or_branch: ${{ inputs.susfs_commit_hash_or_branch }}
+          build_timestamp: ${{ inputs.build_timestamp }}
+          optimize_level: ${{ inputs.optimize_level }}
+          clean: ${{ inputs.clean }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: ðŸ“¦ Upload Kernel ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: kernel-NX809J-KSUN-${{ github.run_number }}
+          path: |
+            **/*.zip
+            **/Image
+          retention-days: 7
+          if-no-files-found: warn
