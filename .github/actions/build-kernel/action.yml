@@ -2022,6 +2022,25 @@ runs:
           if ! grep -q "adreno_overclock.o" "$COMMON_KERNEL_FOLDER/drivers/misc/Makefile"; then
             echo "obj-y += adreno_overclock.o" >> "$COMMON_KERNEL_FOLDER/drivers/misc/Makefile"
           fi
+
+          # Export kgsl_get_device if not exported, since the overclock driver needs it statically at link time
+          KGSL_FILE="$COMMON_KERNEL_FOLDER/drivers/gpu/msm/kgsl.c"
+          if [ -f "$KGSL_FILE" ]; then
+            if ! grep -q "EXPORT_SYMBOL(kgsl_get_device)" "$KGSL_FILE"; then
+              echo "Exporting kgsl_get_device in $KGSL_FILE..."
+              echo "EXPORT_SYMBOL(kgsl_get_device);" >> "$KGSL_FILE"
+            fi
+          else
+            echo "Warning: $KGSL_FILE not found, searching for kgsl_get_device definition..."
+            KGSL_PATH=$(find "$COMMON_KERNEL_FOLDER" -name "kgsl.c" | head -n 1)
+            if [ -n "$KGSL_PATH" ]; then
+              if ! grep -q "EXPORT_SYMBOL(kgsl_get_device)" "$KGSL_PATH"; then
+                echo "Exporting kgsl_get_device in $KGSL_PATH..."
+                echo "EXPORT_SYMBOL(kgsl_get_device);" >> "$KGSL_PATH"
+              fi
+            fi
+          fi
+
           echo "Adreno Overclock Driver injected successfully."
         else
           echo "Model is $OP_MODEL, skipping overclock driver injection."
