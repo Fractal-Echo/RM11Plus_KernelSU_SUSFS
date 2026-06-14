@@ -48,7 +48,7 @@ jobs:
       - name: Install build dependencies
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends ccache bc bison flex libssl-dev libelf-dev python3 python-is-python3 git curl jq zip unzip cpio kmod lz4 zstd
+          sudo apt-get install -y --no-install-recommends ccache bc bison flex libssl-dev libelf-dev libdw-dev python3 python-is-python3 git curl jq zip unzip cpio kmod lz4 zstd
           ccache --set-config=cache_dir=
           ccache --set-config=max_size=8G
           mkdir -p $CCACHE_DIR
