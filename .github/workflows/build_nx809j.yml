@@ -6,11 +6,11 @@ on:
       ksu_branch_or_hash:
         description: 'KernelSU-Next branch/commit (empty = auto)'
         required: false
-        default: ''
+        default: '5a4a71874caaad06aa126f761c93391de1d32361'
       susfs_commit_hash_or_branch:
         description: 'SUSFS branch/commit (empty = auto)'
         required: false
-        default: ''
+        default: '75a613850178234c6c7595d1db8211716a011a2e'
       build_timestamp:
         description: 'Build timestamp (empty = now)'
         required: false
