@@ -41,6 +41,29 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: âš™ï¸ Instalar dependÃªncias do build
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            ccache \
+            bc \
+            bison \
+            flex \
+            libssl-dev \
+            libelf-dev \
+            python3 \
+            python-is-python3 \
+            git \
+            curl \
+            jq \
+            zip \
+            unzip \
+            repo \
+            cpio \
+            kmod \
+            lz4 \
+            zstd
+
       - name: ðŸ”§ Build Kernel NX809J (SM8850 / canoe / android16-6.12)
         uses: ./.github/actions/build-kernel
         with:
