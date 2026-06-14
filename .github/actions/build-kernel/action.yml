@@ -2128,7 +2128,7 @@ runs:
         
         echo "ccache: ENABLED"
         echo "  Dir: $CCACHE_DIR"
-        echo "  Base: $CCACHE_BASEDIR"
+        echo "  Base: ${CCACHE_BASEDIR:-not set}"
         echo "  Max size: $CCACHE_MAXSIZE"
         echo "  Compression: zstd level 3"
         echo "  Features: readonly_direct, file_clone, inode_cache, depend"
