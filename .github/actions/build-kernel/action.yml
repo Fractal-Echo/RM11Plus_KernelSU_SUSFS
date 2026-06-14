@@ -1061,20 +1061,19 @@ runs:
               # Dynamically write the missing fix_dispatch.c.patch
               echo "Creating missing fix_dispatch.c.patch dynamically..."
               mkdir -p "$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version"
-              cat << 'EOF' > "$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version/fix_dispatch.c.patch"
-diff --git a/kernel/supercall/dispatch.c b/kernel/supercall/dispatch.c
-index a352b2b1..950a9df4 100644
---- a/kernel/supercall/dispatch.c
-+++ b/kernel/supercall/dispatch.c
-@@ -4,6 +4,8 @@
- #include <linux/string.h>
- #include <linux/uaccess.h>
- #include <linux/version.h>
-+#include <linux/namei.h>
-+#include <linux/susfs.h>
- 
- #include "uapi/supercall.h"
-EOF
+              PATCH_FILE="$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version/fix_dispatch.c.patch"
+              echo 'diff --git a/kernel/supercall/dispatch.c b/kernel/supercall/dispatch.c' > $PATCH_FILE
+              echo 'index a352b2b1..950a9df4 100644' >> $PATCH_FILE
+              echo '--- a/kernel/supercall/dispatch.c' >> $PATCH_FILE
+              echo '+++ b/kernel/supercall/dispatch.c' >> $PATCH_FILE
+              echo '@@ -4,6 +4,8 @@' >> $PATCH_FILE
+              echo ' #include <linux/string.h>' >> $PATCH_FILE
+              echo ' #include <linux/uaccess.h>' >> $PATCH_FILE
+              echo ' #include <linux/version.h>' >> $PATCH_FILE
+              echo '+#include <linux/namei.h>' >> $PATCH_FILE
+              echo '+#include <linux/susfs.h>' >> $PATCH_FILE
+              echo ' ' >> $PATCH_FILE
+              echo ' #include "uapi/supercall.h"' >> $PATCH_FILE
 
               for file in $(find ./kernel -maxdepth 2 -name "*.rej" -exec basename {} .rej \;); do
                 echo "Patching file: $file with fix_$file.patch"
