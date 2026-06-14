@@ -1078,10 +1078,10 @@ runs:
 
               PATCH_FILE="$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version/fix_app_profile.c.patch"
               echo 'diff --git a/kernel/policy/app_profile.c b/kernel/policy/app_profile.c' > $PATCH_FILE
-              echo 'index f30f6071..7a627cd8 100644' >> $PATCH_FILE
+              echo 'index ef1611f2..7bfb0e34 100644' >> $PATCH_FILE
               echo '--- a/kernel/policy/app_profile.c' >> $PATCH_FILE
               echo '+++ b/kernel/policy/app_profile.c' >> $PATCH_FILE
-              echo '@@ -118,11 +118,6 @@ int escape_with_root_profile(void)' >> $PATCH_FILE
+              echo '@@ -118,10 +118,6 @@ int escape_with_root_profile(void)' >> $PATCH_FILE
               echo '         return -ENOMEM;' >> $PATCH_FILE
               echo '     }' >> $PATCH_FILE
               echo ' ' >> $PATCH_FILE
@@ -1089,11 +1089,10 @@ runs:
               echo '-        pr_warn("Already root, don'\''t escape!\n");' >> $PATCH_FILE
               echo '-        goto out_abort_creds;' >> $PATCH_FILE
               echo '-    }' >> $PATCH_FILE
-              echo '-' >> $PATCH_FILE
+              echo ' ' >> $PATCH_FILE
               echo '     profile = ksu_get_root_profile(cred->uid.val);' >> $PATCH_FILE
               echo ' ' >> $PATCH_FILE
-              echo '     cred->uid.val = profile->uid;' >> $PATCH_FILE
-              echo '@@ -180,9 +175,8 @@ int escape_with_root_profile(void)' >> $PATCH_FILE
+              echo '@@ -180,11 +176,8 @@ int escape_with_root_profile(void)' >> $PATCH_FILE
               echo ' ' >> $PATCH_FILE
               echo '     commit_creds(cred);' >> $PATCH_FILE
               echo ' ' >> $PATCH_FILE
