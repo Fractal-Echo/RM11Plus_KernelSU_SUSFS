@@ -29,6 +29,11 @@ on:
         default: false
         type: boolean
 
+env:
+  CCACHE_DIR: /home/runner/.ccache
+  CCACHE_MAXSIZE: 8G
+  CCACHE_COMPRESS: '1'
+
 jobs:
   build:
     name: 'Build NX809J KSUN SUSFS BBR BBG TTL IPSET Unicode DS NTSync'
@@ -44,9 +49,14 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends ccache bc bison flex libssl-dev libelf-dev python3 python-is-python3 git curl jq zip unzip cpio kmod lz4 zstd
+          ccache --set-config=cache_dir=
+          ccache --set-config=max_size=8G
+          mkdir -p $CCACHE_DIR
 
       - name: Build Kernel NX809J
         uses: ./.github/actions/build-kernel
+        env:
+          CCACHE_DIR: /home/runner/.ccache
         with:
           op_config_json: '{"model":"OPNX809J","soc":"canoe","branch":"wild/sm8850","manifest":"oneplus_15_w.xml","android_version":"android16","kernel_version":"6.12","os_version":"OOS16","hmbird":"false","susfs":"true","bbg":"true","bbr":"true","ttl":"true","ip_set":"true","rust_build":"true","lto":"none","uname":"NX809J-KSUN-SUSFS","unicode":"true","c_compiler":"kernel_platform/prebuilts/clang/host/linux-x86/clang-r547379/bin","rust_compiler":"","zyc_compiler":"","bindgen":"","ds":"true","ntsync":"true"}'
           ksu_type: 'KSUN'
