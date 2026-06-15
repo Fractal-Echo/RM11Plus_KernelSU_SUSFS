@@ -417,13 +417,18 @@ runs:
           fi
         } >> "$GITHUB_ENV"
         
-        echo "âœ… Detected: $ANDROID_VERSION-$FULL_VERSION"
+        echo "✅ Detected: $ANDROID_VERSION-$FULL_VERSION"
         if [ "${{ env.OP_SUSFS }}" = true ]; then
           echo "   SUSFS Branch: gki-$ANDROID_VERSION-$VERSION.$PATCHLEVEL"
         fi
+        
+        if [ "$OP_MODEL" = "OPNX809J" ]; then
+          echo "Copying op_wild_defconfig over gki_defconfig for RedMagic 11 Pro..."
+          cp "$COMMON_KERNEL_FOLDER/arch/arm64/configs/op_wild_defconfig" "$COMMON_KERNEL_FOLDER/arch/arm64/configs/gki_defconfig"
+        fi
         echo "::endgroup::"
 
-    - name: ðŸ·ï¸ Set Build Identity (Hardcoded)
+    - name: 🛠️ Set Build Identity (Hardcoded)
       shell: bash
       run: |
         set -euo pipefail
