@@ -918,6 +918,9 @@ runs:
         KSU_COMMIT_SHA=$(git rev-parse HEAD)
         echo "KSU_COMMIT_SHA=$KSU_COMMIT_SHA" >> $GITHUB_ENV
         
+        echo "Copying uapi headers to kernelsu include folder for sandbox compatibility..."
+        rm -f "$COMMON_KERNEL_FOLDER/drivers/kernelsu/include/uapi" || true
+        cp -r uapi "$COMMON_KERNEL_FOLDER/drivers/kernelsu/include/uapi"
         
         echo "Add KSUN Configuration Settings"
         cat >> "$COMMON_KERNEL_FOLDER/arch/arm64/configs/gki_defconfig" <<EOF
