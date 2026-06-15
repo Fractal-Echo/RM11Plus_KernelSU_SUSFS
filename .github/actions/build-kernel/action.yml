@@ -918,8 +918,9 @@ runs:
         KSU_COMMIT_SHA=$(git rev-parse HEAD)
         echo "KSU_COMMIT_SHA=$KSU_COMMIT_SHA" >> $GITHUB_ENV
         
-        echo "Copying uapi headers to kernelsu include folder for sandbox compatibility..."
-        rm -rf "$COMMON_KERNEL_FOLDER/drivers/kernelsu/include/uapi" || true
+        echo "Physically copying KernelSU Next files for compilation stability..."
+        rm -rf "$COMMON_KERNEL_FOLDER/drivers/kernelsu"
+        cp -r kernel "$COMMON_KERNEL_FOLDER/drivers/kernelsu"
         mkdir -p "$COMMON_KERNEL_FOLDER/drivers/kernelsu/include/uapi"
         cp -r uapi/* "$COMMON_KERNEL_FOLDER/drivers/kernelsu/include/uapi/"
         
