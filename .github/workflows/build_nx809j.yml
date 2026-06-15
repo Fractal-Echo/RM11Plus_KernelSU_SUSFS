@@ -53,6 +53,9 @@ jobs:
           ccache --set-config=max_size=8G
           mkdir -p $CCACHE_DIR
 
+      - name: 🧹 Disk Cleanup
+        uses: ./.github/actions/disk-cleanup
+
       - name: Build Kernel NX809J
         uses: ./.github/actions/build-kernel
         env:
