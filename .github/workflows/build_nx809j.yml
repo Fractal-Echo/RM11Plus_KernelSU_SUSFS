@@ -58,7 +58,7 @@ jobs:
         env:
           CCACHE_DIR: /home/runner/.ccache
         with:
-          op_config_json: '{"model":"OPNX809J","soc":"canoe","branch":"wild/sm8850","manifest":"nx809j_w.xml","android_version":"android16","kernel_version":"6.12","os_version":"OOS16","hmbird":"false","susfs":"true","bbg":"true","bbr":"true","ttl":"true","ip_set":"true","rust_build":"true","lto":"none","uname":"NX809J-KSUN-SUSFS","unicode":"true","c_compiler":"kernel_platform/prebuilts/clang/host/linux-x86/clang-r547379/bin","rust_compiler":"","zyc_compiler":"","bindgen":"","ds":"true","ntsync":"true"}'
+          op_config_json: '{"model":"OPNX809J","soc":"canoe","branch":"wild/sm8850","manifest":"nx809j_w.xml","android_version":"android16","kernel_version":"6.12","os_version":"OOS16","hmbird":"false","susfs":"true","bbg":"true","bbr":"true","ttl":"true","ip_set":"true","rust_build":"true","lto":"none","uname":"OP-WILD","unicode":"true","c_compiler":"kernel_platform/prebuilts/clang/host/linux-x86/clang-r547379/bin","rust_compiler":"","zyc_compiler":"","bindgen":"","ds":"true","ntsync":"true"}'
           ksu_type: 'KSUN'
           ksu_branch_or_hash: ${{ inputs.ksu_branch_or_hash }}
           susfs_commit_hash_or_branch: ${{ inputs.susfs_commit_hash_or_branch }}
