@@ -1223,6 +1223,11 @@ runs:
         fi
         echo "CONFIG_BBG=y" >> common/arch/arm64/configs/gki_defconfig
         sed -i '/^config LSM$/,/^help$/{ /^[[:space:]]*default/ { /baseband_guard/! s/selinux/selinux,baseband_guard/ } }' common/security/Kconfig
+        if grep -q "CONFIG_LSM=" common/arch/arm64/configs/gki_defconfig; then
+          sed -i 's/CONFIG_LSM="\(.*\)"/CONFIG_LSM="\1,baseband_guard"/' common/arch/arm64/configs/gki_defconfig
+        else
+          echo 'CONFIG_LSM="landlock,lockdown,yama,loadpin,safesetid,selinux,smack,tomoyo,apparmor,ipe,bpf,baseband_guard"' >> common/arch/arm64/configs/gki_defconfig
+        fi
         
         echo "âœ… BBG LSM added"
         echo "::endgroup::"
