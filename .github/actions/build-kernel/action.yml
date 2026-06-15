@@ -921,6 +921,7 @@ runs:
         echo "Physically copying KernelSU Next files for compilation stability..."
         rm -rf "$COMMON_KERNEL_FOLDER/drivers/kernelsu"
         cp -r kernel "$COMMON_KERNEL_FOLDER/drivers/kernelsu"
+        rm -rf "$COMMON_KERNEL_FOLDER/drivers/kernelsu/include/uapi" || true
         mkdir -p "$COMMON_KERNEL_FOLDER/drivers/kernelsu/include/uapi"
         cp -r uapi/* "$COMMON_KERNEL_FOLDER/drivers/kernelsu/include/uapi/"
         
