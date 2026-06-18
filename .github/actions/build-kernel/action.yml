@@ -897,6 +897,7 @@ runs:
           sed -i 's/static int security_context_to_sid_with_policy/int security_context_to_sid_with_policy/g' feature/selinux_hide.c
           sed -i 's/static int security_sid_to_context_with_policy/int security_sid_to_context_with_policy/g' feature/selinux_hide.c
           sed -i 's/static void security_compute_av_user_with_policy/void security_compute_av_user_with_policy/g' feature/selinux_hide.c
+          sed -i 's/static void __nocfi security_compute_av_user_with_policy/void __nocfi security_compute_av_user_with_policy/g' feature/selinux_hide.c
         fi
 
         if [[ "$KSU_VERSION" -gt 33095 ]] && [[ "${{ env.KERNEL_VER }}" == "6.12" ]]; then
