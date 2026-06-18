@@ -19,7 +19,7 @@ Changes adopted from the Droidspaces references:
   - `sync`
   - `sleep 0.5`
   - `chmod -R 755 "${AKHOME}/tools"`
-- Extend Droidspaces build configs with IPC, PID, UTS, user namespaces, devtmpfs mount, and cgroup support.
+- Extend Droidspaces build configs with IPC, PID, UTS, devtmpfs mount, and cgroup support. Keep user namespaces disabled by default unless a tested rootfs proves it needs them; Droidspaces v6.3.0 reports `CONFIG_USER_NS disabled` as a hardening-positive state on NX809J.
 
 The Goldzxcbug 6.12.23 images are useful as Droidspaces/NTSync references, but they are not used as the base here because the WildKernels OP15 image already carries KernelSU-Next and SUSFS.
 

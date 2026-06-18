@@ -1521,7 +1521,6 @@ runs:
         CONFIG_NAMESPACES=y
         CONFIG_IPC_NS=y
         CONFIG_UTS_NS=y
-        CONFIG_USER_NS=y
         CONFIG_DEVTMPFS=y
         CONFIG_DEVTMPFS_MOUNT=y
         CONFIG_PID_NS=y
@@ -2094,14 +2093,23 @@ runs:
           sed -i 's/scm_version="$(scm_version --short)"/scm_version=""/' scripts/setlocalversion
         fi
         
-        # Disable Module Signature Verification to allow loading unsigned modules
-        if [ "$OP_MODEL" = "OP15" ]; then
-          echo "Disabling module signature verification for $OP_MODEL..."
-          scripts/config --file "$OUT/.config" -d MODULE_SIG
-          scripts/config --file "$OUT/.config" -d MODULE_SIG_FORCE
-          scripts/config --file "$OUT/.config" -d MODULE_SIG_ALL
-          scripts/config --file "$OUT/.config" -d MODULE_SIG_PROTECT || true
-        fi
+        case "$OP_MODEL" in
+          OP15)
+            echo "Disabling module signature verification for $OP_MODEL..."
+            scripts/config --file "$OUT/.config" -d MODULE_SIG
+            scripts/config --file "$OUT/.config" -d MODULE_SIG_FORCE
+            scripts/config --file "$OUT/.config" -d MODULE_SIG_ALL
+            scripts/config --file "$OUT/.config" -d MODULE_SIG_PROTECT || true
+            ;;
+          OPNX809J)
+            echo "Keeping module signature support, but disabling forced/all module signing for $OP_MODEL..."
+            scripts/config --file "$OUT/.config" -e MODULE_SIG
+            scripts/config --file "$OUT/.config" -d MODULE_SIG_FORCE
+            scripts/config --file "$OUT/.config" -d MODULE_SIG_ALL
+            scripts/config --file "$OUT/.config" -d MODULE_SIG_PROTECT || true
+            scripts/config --file "$OUT/.config" --set-str MODULE_SIG_PROTECT_LIST "" || true
+            ;;
+        esac
         
         if [ "${{ inputs.optimize_level }}" = "O3" ]; then
           scripts/config --file "$OUT/.config" -d CC_OPTIMIZE_FOR_PERFORMANCE -e CC_OPTIMIZE_FOR_PERFORMANCE_O3
@@ -2131,6 +2139,67 @@ runs:
         
         
         make LD="$COMMON_KERNEL_FOLDER/ld-wrapper" HOSTLD="$COMMON_KERNEL_FOLDER/ld-wrapper" O="$OUT" olddefconfig
+
+        if [ "$OP_MODEL" = "OPNX809J" ]; then
+          echo "============================================"
+          echo "Validating NX809J required kernel config"
+          echo "============================================"
+          config_failed=0
+          require_config_y() {
+            local key="$1"
+            if ! grep -qx "CONFIG_${key}=y" "$OUT/.config"; then
+              echo "::error::Required CONFIG_${key}=y is missing"
+              grep -E "^(CONFIG_${key}=|# CONFIG_${key} is not set)" "$OUT/.config" || true
+              config_failed=1
+            fi
+          }
+          require_config_not_set() {
+            local key="$1"
+            if grep -qx "CONFIG_${key}=y" "$OUT/.config"; then
+              echo "::error::CONFIG_${key} must be disabled for NX809J"
+              config_failed=1
+            fi
+          }
+          warn_config_y() {
+            local key="$1"
+            if ! grep -qx "CONFIG_${key}=y" "$OUT/.config"; then
+              echo "::warning::Recommended CONFIG_${key}=y is missing"
+              grep -E "^(CONFIG_${key}=|# CONFIG_${key} is not set)" "$OUT/.config" || true
+            fi
+          }
+
+          for key in \
+            KSU \
+            KSU_SUSFS \
+            NTSYNC \
+            OVERLAY_FS \
+            TMPFS_XATTR \
+            TMPFS_POSIX_ACL
+          do
+            require_config_y "$key"
+          done
+
+          require_config_y MODULE_SIG
+          require_config_not_set USER_NS
+          require_config_not_set MODULE_SIG_FORCE
+          require_config_not_set MODULE_SIG_ALL
+
+          for key in \
+            CGROUP_PIDS \
+            DEVTMPFS_MOUNT \
+            IP6_NF_NAT
+          do
+            warn_config_y "$key"
+          done
+
+          echo "NX809J config snapshot:"
+          grep -E '^(CONFIG_(KSU|KSU_SUSFS|NTSYNC|OVERLAY_FS|TMPFS_XATTR|TMPFS_POSIX_ACL|USER_NS|CGROUP_PIDS|DEVTMPFS_MOUNT|IP6_NF_NAT|MODULE_SIG|MODULE_SIG_FORCE|MODULE_SIG_ALL)=|# CONFIG_(USER_NS|CGROUP_PIDS|DEVTMPFS_MOUNT|IP6_NF_NAT|MODULE_SIG_FORCE|MODULE_SIG_ALL) is not set)' "$OUT/.config" || true
+
+          if [ "$config_failed" -ne 0 ]; then
+            echo "::error::NX809J kernel config validation failed"
+            exit 1
+          fi
+        fi
         
         KCFLAGS="$KCFLAGS -Wno-error -pipe ${KCFLAGS_EXTRA}"
         KCPPFLAGS="$KCPPFLAGS -DCONFIG_OPTIMIZE_INLINING"
