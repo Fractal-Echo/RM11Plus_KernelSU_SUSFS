@@ -892,10 +892,15 @@ runs:
           sed -i 's/#if defined(CONFIG_STACKPROTECTOR) && (defined(CONFIG_ARM64) && !defined(CONFIG_STACKPROTECTOR_PER_TASK))/#if 0/' ksu.c
         fi
         
+        if [ -f feature/selinux_hide.c ]; then
+          echo "Patching feature/selinux_hide.c to expose SUSFS SELinux functions..."
+          sed -i 's/static int security_context_to_sid_with_policy/int security_context_to_sid_with_policy/g' feature/selinux_hide.c
+          sed -i 's/static int security_sid_to_context_with_policy/int security_sid_to_context_with_policy/g' feature/selinux_hide.c
+          sed -i 's/static void security_compute_av_user_with_policy/void security_compute_av_user_with_policy/g' feature/selinux_hide.c
+        fi
+
         if [[ "$KSU_VERSION" -gt 33095 ]] && [[ "${{ env.KERNEL_VER }}" == "6.12" ]]; then
-          sed -i 's|ccflags-y += -I$(KSU_KERNEL_DIR) -I$(KSU_KERNEL_DIR)/include|ccflags-y += -I$(KSU_KERNEL_DIR) -I$(KSU_KERNEL_DIR)/include -I$(KSU_KERNEL_DIR)/include/uapi|' Kbuild
-          sed -i 's|$(src)|$(abspath $(src))|' Kbuild
-          sed -i 's|$(srctree)/$(src)|$(abspath $(srctree)/$(src))|' Kbuild
+          sed -i 's|ccflags-y += -I$(KSU_KERNEL_DIR) -I$(KSU_KERNEL_DIR)/include|ccflags-y += -I$(srctree)/drivers/kernelsu -I$(srctree)/drivers/kernelsu/include -I$(srctree)/drivers/kernelsu/include/uapi|' Kbuild
         fi
         
         if [ "$KSU_VERSION" -lt 12884 ]; then
@@ -908,6 +913,12 @@ runs:
         KSU_COMMIT_SHA=$(git rev-parse HEAD)
         echo "KSU_COMMIT_SHA=$KSU_COMMIT_SHA" >> $GITHUB_ENV
         
+        echo "Physically copying KernelSU Next files for compilation stability..."
+        rm -rf "$COMMON_KERNEL_FOLDER/drivers/kernelsu"
+        cp -r kernel "$COMMON_KERNEL_FOLDER/drivers/kernelsu"
+        rm -rf "$COMMON_KERNEL_FOLDER/drivers/kernelsu/include/uapi" || true
+        mkdir -p "$COMMON_KERNEL_FOLDER/drivers/kernelsu/include/uapi"
+        cp -r uapi/* "$COMMON_KERNEL_FOLDER/drivers/kernelsu/include/uapi/"
         
         echo "Add KSUN Configuration Settings"
         cat >> "$COMMON_KERNEL_FOLDER/arch/arm64/configs/gki_defconfig" <<EOF
@@ -1149,6 +1160,18 @@ runs:
             exit 1
             ;;
         esac
+
+        if [ "${{ inputs.ksu_type }}" = "KSUN" ] && [ -f "$KSUN_FOLDER/kernel/feature/sucompat.c" ]; then
+          SUCOMPAT_FILE="$KSUN_FOLDER/kernel/feature/sucompat.c"
+          if grep -q 'susfs_is_current_proc_umounted\|susfs_set_current_proc_umounted' "$SUCOMPAT_FILE" && ! grep -qF '#include <linux/susfs_def.h>' "$SUCOMPAT_FILE"; then
+            echo "Adding missing SUSFS helper include to sucompat.c"
+            sed -i '/#include <linux\/ptrace.h>/a #include <linux/susfs_def.h>' "$SUCOMPAT_FILE"
+          fi
+          if grep -q 'is_init(get_current_cred())' "$SUCOMPAT_FILE" && ! grep -qF '#include "selinux/selinux.h"' "$SUCOMPAT_FILE"; then
+            echo "Adding missing SELinux helper include to sucompat.c"
+            sed -i '/#include "policy\/allowlist.h"/i #include "selinux/selinux.h"' "$SUCOMPAT_FILE"
+          fi
+        fi
         
         cd "$COMMON_KERNEL_FOLDER"
         if [ "${{ env.ANDROID_VER }}" = "android15" ] && [ "${{ env.KERNEL_VER }}" = "6.6" ]; then
