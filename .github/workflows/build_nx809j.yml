@@ -28,11 +28,20 @@ on:
         required: false
         default: false
         type: boolean
+      make_release:
+        description: 'Publish successful build to GitHub Releases'
+        required: false
+        default: true
+        type: boolean
 
 env:
   CCACHE_DIR: /home/runner/.ccache
   CCACHE_MAXSIZE: 8G
   CCACHE_COMPRESS: '1'
+
+permissions:
+  contents: write
+  actions: read
 
 jobs:
   build:
@@ -79,3 +88,55 @@ jobs:
             **/Image
           retention-days: 7
           if-no-files-found: warn
+
+      - name: Publish GitHub Release
+        if: ${{ success() && inputs.make_release == true }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: nx809j-build-${{ github.run_number }}
+          RELEASE_TITLE: NX809J GitHub Actions Build ${{ github.run_number }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          release_dir="$RUNNER_TEMP/nx809j-release"
+          mkdir -p "$release_dir"
+
+          mapfile -t kernel_zips < <(find "$GITHUB_WORKSPACE" -path '*/artifacts/AK3_OPNX809J_*.zip' -type f | sort)
+          if [ "${#kernel_zips[@]}" -eq 0 ]; then
+            echo "::error::No OPNX809J AnyKernel ZIP found under artifacts/"
+            exit 1
+          fi
+
+          for file in "${kernel_zips[@]}"; do
+            cp "$file" "$release_dir/"
+          done
+
+          while IFS= read -r file; do
+            cp "$file" "$release_dir/"
+          done < <(find "$GITHUB_WORKSPACE" -name '*ksu_module*.zip' -type f | sort)
+
+          (cd "$release_dir" && sha256sum * > SHA256SUMS.txt)
+
+          cat > "$release_dir/RELEASE_NOTES.md" <<EOF
+          NX809J GitHub Actions build ${{ github.run_number }}.
+
+          Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          Commit: ${{ github.sha }}
+
+          Includes:
+          - AnyKernel package for OPNX809J / Android 16 / 6.12.23 / KSUN / SuSFS
+          - KernelSU module artifacts produced by the build, when present
+          - SHA256SUMS.txt
+
+          Warning: this is a freshly rebuilt Actions artifact. Test safely before permanent flash.
+          EOF
+
+          if gh release view "$TAG_NAME" >/dev/null 2>&1; then
+            gh release upload "$TAG_NAME" "$release_dir"/* --clobber
+          else
+            gh release create "$TAG_NAME" "$release_dir"/* \
+              --title "$RELEASE_TITLE" \
+              --notes-file "$release_dir/RELEASE_NOTES.md" \
+              --latest=false
+          fi
