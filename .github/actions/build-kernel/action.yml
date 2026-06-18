@@ -2092,6 +2092,42 @@ runs:
         echo "   SHA256: $ZIP_SHA256"
         echo "::endgroup::"
 
+    - name: Create Droidspaces KernelSU Module ZIP
+      id: create_droidspaces_module
+      if: ${{ env.OP_DS == 'true' }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        echo "::group::Create Droidspaces KernelSU module ZIP"
+
+        MODULE_SOURCE="$GITHUB_WORKSPACE/vendor/droidspaces-module"
+        if [ ! -d "$MODULE_SOURCE" ]; then
+          echo "::error::Vendored Droidspaces module source not found: $MODULE_SOURCE"
+          exit 1
+        fi
+
+        MODULE_NAME="Droidspaces_Daemon_Init_KernelSU_${OP_MODEL}_${OP_OS_VERSION}_${KERNEL_FULL_VER}_${{ inputs.ksu_type }}_${KSUVER:-unknown}.zip"
+        MODULE_OUTPUT="$ARTIFACTS_FOLDER/$MODULE_NAME"
+
+        python3 "$GITHUB_WORKSPACE/tools/package_droidspaces_module.py" \
+          --module-dir "$MODULE_SOURCE" \
+          --output "$MODULE_OUTPUT" | tee /tmp/droidspaces_module.log
+
+        MODULE_SHA256=$(sha256sum "$MODULE_OUTPUT" | awk '{print $1}')
+        MODULE_SIZE=$(stat -c%s "$MODULE_OUTPUT")
+
+        echo "droidspaces_zip_name=$MODULE_NAME" >> "$GITHUB_OUTPUT"
+        echo "droidspaces_zip_sha256=$MODULE_SHA256" >> "$GITHUB_OUTPUT"
+        echo "DROIDSPACES_ZIP_NAME=$MODULE_NAME" >> "$GITHUB_ENV"
+        echo "DROIDSPACES_ZIP_SHA256=$MODULE_SHA256" >> "$GITHUB_ENV"
+
+        echo ""
+        echo "Droidspaces module ZIP created successfully"
+        echo "   Name: $MODULE_NAME"
+        echo "   Size: $(numfmt --to=iec-i --suffix=B "$MODULE_SIZE")"
+        echo "   SHA256: $MODULE_SHA256"
+        echo "::endgroup::"
+
     - name: Final Build Summary
       shell: bash
       run: |
@@ -2136,6 +2172,10 @@ runs:
           echo ""
           echo "Image SHA256: ${{ steps.collect_stats.outputs.image_sha256 }}"
           echo "AnyKernel3 ZIP SHA256: ${{ steps.create_zip.outputs.zip_sha256 }}"
+          if [ -n "${DROIDSPACES_ZIP_NAME:-}" ]; then
+            echo "Droidspaces Module: ${DROIDSPACES_ZIP_NAME}"
+            echo "Droidspaces Module SHA256: ${DROIDSPACES_ZIP_SHA256:-unknown}"
+          fi
           echo "Compiler: ${CLANG_VERSION:-unknown}"
           echo "Warnings Count: ${{ steps.collect_stats.outputs.warnings_count }}"
           echo "Build Time: ${{ steps.collect_stats.outputs.build_time }}s"
@@ -2218,6 +2258,10 @@ runs:
           echo "| **Compiler** | \`${CLANG_VERSION:-unknown}\` |"
           echo "| **Artifact Name** | \`${{ env.ZIP_NAME }}\` |"
           echo "| **AnyKernel3 SHA256** | \`${{ steps.create_zip.outputs.zip_sha256 }}\` |"
+          if [ -n "${DROIDSPACES_ZIP_NAME:-}" ]; then
+            echo "| **Droidspaces Module** | \`${DROIDSPACES_ZIP_NAME}\` |"
+            echo "| **Droidspaces Module SHA256** | \`${DROIDSPACES_ZIP_SHA256:-unknown}\` |"
+          fi
         } >> "$GITHUB_STEP_SUMMARY"
 
     - name: Upload Debug Artifacts
@@ -2235,6 +2279,16 @@ runs:
       with:
         name: ${{ env.ZIP_NAME }}
         path: ${{ env.ARTIFACTS_FOLDER }}/${{ env.ZIP_NAME }}
+        archive: false
+        compression-level: 0
+        retention-days: 90
+
+    - name: Upload Droidspaces Module Artifact
+      if: success() && steps.create_droidspaces_module.conclusion == 'success'
+      uses: actions/upload-artifact@v7
+      with:
+        name: ${{ env.DROIDSPACES_ZIP_NAME }}
+        path: ${{ env.ARTIFACTS_FOLDER }}/${{ env.DROIDSPACES_ZIP_NAME }}
         archive: false
         compression-level: 0
         retention-days: 90
