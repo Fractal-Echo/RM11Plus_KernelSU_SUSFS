@@ -1043,7 +1043,8 @@ runs:
               for file in $(find ./kernel -maxdepth 2 -name "*.rej" -exec basename {} .rej \;); do
                 echo "Patching file: $file with fix_$file.patch"
                 if [ -f "$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version/fix_$file.patch" ]; then
-                  patch -p1 --forward < "$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version/fix_$file.patch"
+                  patch -p1 --forward < "$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version/fix_$file.patch" || \
+                    echo "Warning: fix_$file.patch did not apply cleanly, continuing..."
                 else
                   echo "Warning: fix_$file.patch not found, skipping..."
                 fi
@@ -1134,7 +1135,8 @@ runs:
               for file in $(find ./kernel -maxdepth 2 -name "*.rej" -exec basename {} .rej \;); do
                 echo "Patching file: $file with fix_$file.patch"
                 if [ -f "$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version/fix_$file.patch" ]; then
-                  patch -p1 --forward < "$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version/fix_$file.patch"
+                  patch -p1 --forward < "$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version/fix_$file.patch" || \
+                    echo "Warning: fix_$file.patch did not apply cleanly, continuing..."
                 else
                   echo "Warning: fix_$file.patch not found, skipping..."
                 fi
