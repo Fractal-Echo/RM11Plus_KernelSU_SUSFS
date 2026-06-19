@@ -460,24 +460,4 @@ If you encounter any issues or need help, feel free to:
 - 🐛 Open an issue in this repository
 - 💬 Reach out to me directly
 
----
-
-## 📱 Connect With Us
-
-<div align="center">
-  
-[![Telegram](https://img.shields.io/badge/Telegram-fatalcoder524-blue?logo=telegram)](https://t.me/anonymous_yolo)
-[![Telegram Group](https://img.shields.io/badge/Telegram-WildKernels-blue?logo=telegram)](https://t.me/WildKernelsTG)
-
-</div>
-
----
-
-## 💝 Donations
-
-Any and all donations are appreciated!
-
-PayPal: [paypal.me/fatalcoder524](https://paypal.me/fatalcoder524)
-
-DM on Telegram for UPI donations!
-
+Telegram: [redmagic11PR0](https://t.me/redmagic11PR0)
