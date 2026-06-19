@@ -555,7 +555,7 @@ runs:
         
         if [ -z "$short" ]; then
           short="$("${CLANG_BIN}/clang" --version | sha256sum | cut -c1-8)"
-          echo "âš ï¸ Could not extract clang-r version, using hash: $short"
+          echo "Warning: Could not extract clang-r version, using hash: $short"
         else
           echo "âœ… Clang version fingerprint: $short"
         fi
@@ -713,7 +713,7 @@ runs:
           echo "Updating atime to achive cache eviction"
           find ${{ env.CCACHE_DIR }} -type f -exec touch -t $(date -d "1 day ago" +%Y%m%d%H%M) {} +
         else
-          echo "âš ï¸ No existing cache - building from scratch"
+          echo "Warning: No existing cache - building from scratch"
           echo "Cache will be populated for future builds"
         fi
         
@@ -746,7 +746,7 @@ runs:
           if [ -z "$SUSFS_INPUT" ]; then
             # use kernel-specific default
             SUSFS_BRANCH="${DEFAULT_SUSFS[$KERNEL_KEY]:-gki-android15-6.6}"
-            echo "â„¹ï¸  Using default SUSFS branch for $KERNEL_KEY: $SUSFS_BRANCH"
+            echo "Using default SUSFS branch for $KERNEL_KEY: $SUSFS_BRANCH"
           else
             # 40-char hash or branch/commit passed directly
             SUSFS_BRANCH="$SUSFS_INPUT"
@@ -800,7 +800,7 @@ runs:
                   fi
               fi
               
-              echo "âš ï¸ Attempt $attempt failed, clearing RAM and retrying..."
+              echo "Warning: Attempt $attempt failed, clearing RAM and retrying..."
               rm -rf "$repo_name" "$shm_path" 2>/dev/null
               sleep 5
               attempt=$((attempt + 1))
@@ -833,7 +833,7 @@ runs:
               return 0
             }
             
-            echo "âŒ Failed, cleaning up..."
+            echo "Failed, cleaning up..."
             rm -rf "$dir" 2>/dev/null
             sleep $((attempt++ * 5))
           done
@@ -875,9 +875,9 @@ runs:
         echo "Adding KernelSU Next..."
         KSU_INPUT="${{ inputs.ksu_branch_or_hash }}"
         if [ -z "$KSU_INPUT" ]; then
-          curl --fail --location --proto '=https' -LSs "https://raw.githubusercontent.com/pershoot/KernelSU-Next/dev-susfs/kernel/setup.sh" | bash -s dev-susfs
+          curl --fail --location --proto '=https' -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" | bash -
         else
-          curl --fail --location --proto '=https' -LSs "https://raw.githubusercontent.com/pershoot/KernelSU-Next/dev-susfs/kernel/setup.sh" | bash -s "$KSU_INPUT"
+          curl --fail --location --proto '=https' -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" | bash -s "$KSU_INPUT"
         fi
         git submodule update --init --recursive
         cd KernelSU-Next/kernel
@@ -902,6 +902,7 @@ runs:
           sed -i 's/static int security_context_to_sid_with_policy/int security_context_to_sid_with_policy/g' feature/selinux_hide.c
           sed -i 's/static int security_sid_to_context_with_policy/int security_sid_to_context_with_policy/g' feature/selinux_hide.c
           sed -i 's/static void security_compute_av_user_with_policy/void security_compute_av_user_with_policy/g' feature/selinux_hide.c
+          sed -i 's/static void __nocfi security_compute_av_user_with_policy/void __nocfi security_compute_av_user_with_policy/g' feature/selinux_hide.c
         fi
         
         if [[ "$KSU_VERSION" -gt 33095 ]] && [[ "${{ env.KERNEL_VER }}" == "6.12" ]]; then
@@ -1071,7 +1072,96 @@ runs:
             ;;
           "v2.1.0")
             if [ "${{ inputs.ksu_type }}" = "KSUN" ]; then
-              echo "KSUN is pre-patched, skipping patching"
+              cd "$KSUN_FOLDER"
+              patch -p1 --forward < "$SUSFS_FOLDER/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch" || true
+
+              echo "Creating missing v2.1.0 SUSFS fix patches dynamically..."
+              mkdir -p "$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version"
+
+              PATCH_FILE="$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version/fix_dispatch.c.patch"
+              {
+                echo 'diff --git a/kernel/supercall/dispatch.c b/kernel/supercall/dispatch.c'
+                echo 'index a352b2b1..950a9df4 100644'
+                echo '--- a/kernel/supercall/dispatch.c'
+                echo '+++ b/kernel/supercall/dispatch.c'
+                echo '@@ -4,6 +4,8 @@'
+                echo ' #include <linux/string.h>'
+                echo ' #include <linux/uaccess.h>'
+                echo ' #include <linux/version.h>'
+                echo '+#include <linux/namei.h>'
+                echo '+#include <linux/susfs.h>'
+                echo ' '
+                echo ' #include "uapi/supercall.h"'
+              } > "$PATCH_FILE"
+
+              PATCH_FILE="$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version/fix_app_profile.c.patch"
+              {
+                echo 'diff --git a/kernel/policy/app_profile.c b/kernel/policy/app_profile.c'
+                echo 'index ef1611f2..7bfb0e34 100644'
+                echo '--- a/kernel/policy/app_profile.c'
+                echo '+++ b/kernel/policy/app_profile.c'
+                echo '@@ -118,10 +118,6 @@ int escape_with_root_profile(void)'
+                echo '         return -ENOMEM;'
+                echo '     }'
+                echo ' '
+                echo '-    if (cred->euid.val == 0) {'
+                echo '-        pr_warn("Already root, don'\''t escape!\n");'
+                echo '-        goto out_abort_creds;'
+                echo '-    }'
+                echo ' '
+                echo '     profile = ksu_get_root_profile(cred->uid.val);'
+                echo ' '
+                echo '@@ -180,11 +176,8 @@ int escape_with_root_profile(void)'
+                echo ' '
+                echo '     commit_creds(cred);'
+                echo ' '
+                echo '-    disable_seccomp();'
+                echo '-'
+                echo '-    for_each_thread (p, t) {'
+                echo '-        ksu_set_task_tracepoint_flag(t);'
+                echo '-    }'
+                echo '+    if (likely(test_thread_flag(TIF_SECCOMP)))'
+                echo '+        disable_seccomp();'
+                echo ' '
+                echo '     setup_mount_ns(profile->namespaces);'
+                echo '     ksu_put_root_profile(profile);'
+              } > "$PATCH_FILE"
+
+              PATCH_FILE="$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version/fix_boot_event.c.patch"
+              {
+                echo 'diff --git a/kernel/runtime/boot_event.c b/kernel/runtime/boot_event.c'
+                echo '--- a/kernel/runtime/boot_event.c'
+                echo '+++ b/kernel/runtime/boot_event.c'
+                echo '@@ -13,6 +13,7 @@'
+                echo ' '
+                echo ' bool ksu_module_mounted __read_mostly = false;'
+                echo ' bool ksu_boot_completed __read_mostly = false;'
+                echo '+extern struct static_key_true ksu_is_input_hook_enabled;'
+                echo ' '
+                echo ' extern void ksu_avc_spoof_late_init(void);'
+              } > "$PATCH_FILE"
+
+              for file in $(find ./kernel -maxdepth 2 -name "*.rej" -exec basename {} .rej \;); do
+                echo "Patching file: $file with fix_$file.patch"
+                if [ -f "$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version/fix_$file.patch" ]; then
+                  patch -p1 --forward < "$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version/fix_$file.patch" || \
+                    echo "Warning: fix_$file.patch did not apply cleanly, continuing..."
+                else
+                  echo "Warning: fix_$file.patch not found, skipping..."
+                fi
+              done
+              echo "Patching Hook Mode!"
+              patch -p1 --forward < "$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version/overwrite_hook_mode.patch"
+              echo "Patching KSU_TOOLKIT Support for SusFS kernel!"
+              patch -p1 --forward < "$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version/ksu_toolkit.patch"
+              if [ "$KSUVER" -le 33095 ]; then
+                echo "Patching Multi-manager Support for SusFS kernel!"
+                patch -p1 --forward < "$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version/multi_manager.patch"
+              fi
+              if [ "$KSUVER" -ge 33068 ] && [ "$KSUVER" -lt 33070 ]; then
+                echo "Patching Multi-manager sepolicy Support for SusFS kernel!"
+                patch -p1 --forward < "$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version/multi_sepolicy_fix.patch"
+              fi
             else
               cd "$KSU_FOLDER"
               patch -p1 --forward < "$SUSFS_FOLDER/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch" || true
@@ -1082,7 +1172,19 @@ runs:
             exit 1
             ;;
         esac
-        
+
+        if [ "${{ inputs.ksu_type }}" = "KSUN" ] && [ -f "$KSUN_FOLDER/kernel/feature/sucompat.c" ]; then
+          SUCOMPAT_FILE="$KSUN_FOLDER/kernel/feature/sucompat.c"
+          if grep -q 'susfs_is_current_proc_umounted\|susfs_set_current_proc_umounted' "$SUCOMPAT_FILE" && ! grep -qF '#include <linux/susfs_def.h>' "$SUCOMPAT_FILE"; then
+            echo "Adding missing SUSFS helper include to sucompat.c"
+            sed -i '/#include <linux\/ptrace.h>/a #include <linux/susfs_def.h>' "$SUCOMPAT_FILE"
+          fi
+          if grep -q 'is_init(get_current_cred())' "$SUCOMPAT_FILE" && ! grep -qF '#include "selinux/selinux.h"' "$SUCOMPAT_FILE"; then
+            echo "Adding missing SELinux helper include to sucompat.c"
+            sed -i '/#include "policy\/allowlist.h"/i #include "selinux/selinux.h"' "$SUCOMPAT_FILE"
+          fi
+        fi
+
         cd "$COMMON_KERNEL_FOLDER"
         if [ "${{ env.ANDROID_VER }}" = "android15" ] && [ "${{ env.KERNEL_VER }}" = "6.6" ]; then
           if ! grep -qxF '#include <trace/hooks/fs.h>' ./fs/namespace.c; then
@@ -2048,7 +2150,7 @@ runs:
         export KBUILD_BUILD_VERSION=1
         echo "ðŸ”¢ SOURCE_DATE_EPOCH: $SOURCE_DATE_EPOCH"
         echo "ðŸ‘¤ Build user: $KBUILD_BUILD_USER"
-        echo "ðŸ–¥ï¸  Build host: $KBUILD_BUILD_HOST"
+        echo "Build host: $KBUILD_BUILD_HOST"
         
         export CC="ccache clang"
         export CXX="ccache clang++"
@@ -2065,7 +2167,7 @@ runs:
         mkdir -p "$OUT"
         
         echo "============================================"
-        echo "ðŸ” Compiler & ccache Verification"
+        echo "Compiler & ccache Verification"
         echo "============================================"
         echo "PATH: ${PATH:0:200}..."
         echo "which clang: $(which clang)"
@@ -2471,6 +2573,42 @@ runs:
         echo "   SHA256: $ZIP_SHA256"
         echo "::endgroup::"
 
+    - name: Create Droidspaces KernelSU Module ZIP
+      id: create_droidspaces_module
+      if: ${{ env.OP_DS == 'true' }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        echo "::group::Create Droidspaces KernelSU module ZIP"
+
+        MODULE_SOURCE="$GITHUB_WORKSPACE/vendor/droidspaces-module"
+        if [ ! -d "$MODULE_SOURCE" ]; then
+          echo "::error::Vendored Droidspaces module source not found: $MODULE_SOURCE"
+          exit 1
+        fi
+
+        MODULE_NAME="Droidspaces_Daemon_Init_KernelSU_${OP_MODEL}_${OP_OS_VERSION}_${KERNEL_FULL_VER}_${{ inputs.ksu_type }}_${KSUVER:-unknown}.zip"
+        MODULE_OUTPUT="$ARTIFACTS_FOLDER/$MODULE_NAME"
+
+        python3 "$GITHUB_WORKSPACE/tools/package_droidspaces_module.py" \
+          --module-dir "$MODULE_SOURCE" \
+          --output "$MODULE_OUTPUT" | tee /tmp/droidspaces_module.log
+
+        MODULE_SHA256=$(sha256sum "$MODULE_OUTPUT" | awk '{print $1}')
+        MODULE_SIZE=$(stat -c%s "$MODULE_OUTPUT")
+
+        echo "droidspaces_zip_name=$MODULE_NAME" >> "$GITHUB_OUTPUT"
+        echo "droidspaces_zip_sha256=$MODULE_SHA256" >> "$GITHUB_OUTPUT"
+        echo "DROIDSPACES_ZIP_NAME=$MODULE_NAME" >> "$GITHUB_ENV"
+        echo "DROIDSPACES_ZIP_SHA256=$MODULE_SHA256" >> "$GITHUB_ENV"
+
+        echo ""
+        echo "Droidspaces module ZIP created successfully"
+        echo "   Name: $MODULE_NAME"
+        echo "   Size: $(numfmt --to=iec-i --suffix=B "$MODULE_SIZE")"
+        echo "   SHA256: $MODULE_SHA256"
+        echo "::endgroup::"
+
     - name: Final Build Summary
       shell: bash
       run: |
@@ -2515,6 +2653,10 @@ runs:
           echo ""
           echo "Image SHA256: ${{ steps.collect_stats.outputs.image_sha256 }}"
           echo "AnyKernel3 ZIP SHA256: ${{ steps.create_zip.outputs.zip_sha256 }}"
+          if [ -n "${DROIDSPACES_ZIP_NAME:-}" ]; then
+            echo "Droidspaces Module: ${DROIDSPACES_ZIP_NAME}"
+            echo "Droidspaces Module SHA256: ${DROIDSPACES_ZIP_SHA256:-unknown}"
+          fi
           echo "Compiler: ${CLANG_VERSION:-unknown}"
           echo "Warnings Count: ${{ steps.collect_stats.outputs.warnings_count }}"
           echo "Build Time: ${{ steps.collect_stats.outputs.build_time }}s"
@@ -2597,6 +2739,10 @@ runs:
           echo "| **Compiler** | \`${CLANG_VERSION:-unknown}\` |"
           echo "| **Artifact Name** | \`${{ env.ZIP_NAME }}\` |"
           echo "| **AnyKernel3 SHA256** | \`${{ steps.create_zip.outputs.zip_sha256 }}\` |"
+          if [ -n "${DROIDSPACES_ZIP_NAME:-}" ]; then
+            echo "| **Droidspaces Module** | \`${DROIDSPACES_ZIP_NAME}\` |"
+            echo "| **Droidspaces Module SHA256** | \`${DROIDSPACES_ZIP_SHA256:-unknown}\` |"
+          fi
         } >> "$GITHUB_STEP_SUMMARY"
 
     - name: Upload Debug Artifacts
@@ -2614,6 +2760,16 @@ runs:
       with:
         name: ${{ env.ZIP_NAME }}
         path: ${{ env.ARTIFACTS_FOLDER }}/${{ env.ZIP_NAME }}
+        archive: false
+        compression-level: 0
+        retention-days: 90
+
+    - name: Upload Droidspaces Module Artifact
+      if: success() && steps.create_droidspaces_module.conclusion == 'success'
+      uses: actions/upload-artifact@v7
+      with:
+        name: ${{ env.DROIDSPACES_ZIP_NAME }}
+        path: ${{ env.ARTIFACTS_FOLDER }}/${{ env.DROIDSPACES_ZIP_NAME }}
         archive: false
         compression-level: 0
         retention-days: 90
