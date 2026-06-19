@@ -284,6 +284,87 @@ adb shell su -c 'dmesg | tail -n 80'
 Replace `driver` with the module name shown by `modinfo`, not necessarily the
 file name.
 
+#### Ways To Load A Driver
+
+There are several ways to test or deploy a kernel driver. They do not all have
+the same AVB/vbmeta requirements.
+
+Manual runtime test:
+
+- Location: `/data/local/tmp/driver.ko`
+- Load method: `insmod /data/local/tmp/driver.ko`
+- Needs root: yes
+- Needs vbmeta changes: normally no
+- Best use: first test, because it happens after Android has already booted.
+
+KernelSU module:
+
+- Location: usually under `/data/adb/modules/<module-name>/`
+- Load method: module script runs `insmod`/`modprobe`
+- Needs root: yes, through KernelSU
+- Needs vbmeta changes: normally no
+- Best use: repeatable loading after the manual test already worked.
+- Risk: if the module loads too early and crashes the kernel, Android can
+  bootloop until the KernelSU module is disabled or removed.
+
+System/vendor DLKM partition:
+
+- Location: `system_dlkm`, `vendor_dlkm`, or a related verified partition
+- Load method: Android/vendor module loader or init scripts
+- Needs root: yes
+- Needs vbmeta changes: often yes, because these partitions are AVB verified
+- Best use: permanent/vendor-style deployment after the module is proven safe.
+- Risk: wrong module, wrong dependency order, or bad symbols can break boot.
+
+Boot/vendor_boot/init_boot image:
+
+- Location: packed into a boot-related image or ramdisk
+- Load method: early boot script/init flow
+- Needs vbmeta changes: often yes
+- Best use: only when the driver must load very early.
+- Risk: highest, because a bad module can prevent Android from booting.
+
+#### AVB/vbmeta vs `.ko` Signature
+
+AVB/vbmeta and kernel module signature are different checks.
+
+Kernel module signature decides whether the running kernel accepts a `.ko` at
+load time. For this, check `CONFIG_MODULE_SIG_FORCE`, `sig_enforce`, and
+`module.sig_enforce`.
+
+AVB/vbmeta decides whether Android accepts modified boot/system/vendor images
+or verified partitions. For this, check bootloader state, vbmeta state, and
+verity/verification state.
+
+You normally do not need to disable vbmeta just to test:
+
+```sh
+adb push driver.ko /data/local/tmp/driver.ko
+adb shell su -c 'insmod /data/local/tmp/driver.ko'
+```
+
+You may need vbmeta/verity changes if you modify or flash verified partitions
+or images such as `vendor_dlkm`, `system_dlkm`, `boot`, `vendor_boot`,
+`init_boot`, or `dtbo`.
+
+The commands used for this vbmeta/verity path are device- and slot-sensitive.
+Use only when you intentionally want to flash modified verified images:
+
+```sh
+fastboot --disable-verity flash vbmeta_a vbmeta.img
+fastboot --disable-verity flash vbmeta_b vbmeta.img
+fastboot --disable-verity --disable-verification flash vbmeta_system_a vbmeta_system.img
+fastboot --disable-verity --disable-verification flash vbmeta_system_b vbmeta_system.img
+```
+
+Important:
+
+- These commands are not required for a simple `/data/local/tmp` `insmod` test.
+- Use the vbmeta images that match the exact firmware/device/slot layout.
+- Disabling verification can reduce device security and can cause boot failure
+  if the wrong image is flashed.
+- Keep a known-good boot/recovery path before modifying verified images.
+
 #### How To Read `dmesg`
 
 These messages mean the unsigned module path is working, but the kernel is
