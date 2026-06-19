@@ -1714,9 +1714,45 @@ runs:
             ;;
         esac
         
+        if [ "$OP_MODEL" = "OP15" ] && [ "$ANDROID_VER" = "android16" ] && [ "$KERNEL_VER" = "6.12" ]; then
+          echo "Configuring OP15 unsigned-module policy"
+          scripts/config --file "$OUT/.config" -d MODULE_SIG_FORCE || true
+          scripts/config --file "$OUT/.config" -d MODULE_SIG_ALL || true
+        fi
         
         make LD="$COMMON_KERNEL_FOLDER/ld-wrapper" HOSTLD="$COMMON_KERNEL_FOLDER/ld-wrapper" O="$OUT" olddefconfig
-        
+
+        if [ "$OP_MODEL" = "OP15" ] && [ "$ANDROID_VER" = "android16" ] && [ "$KERNEL_VER" = "6.12" ]; then
+          echo "::group::Validate OP15 unsigned module policy"
+          CONFIG_FILE="$OUT/.config"
+
+          echo "Relevant module signature config:"
+          grep -E '^(CONFIG_MODULE_SIG|# CONFIG_MODULE_SIG)' "$CONFIG_FILE" || true
+
+          if grep -qx 'CONFIG_MODULE_SIG_FORCE=y' "$CONFIG_FILE"; then
+            echo "::error::CONFIG_MODULE_SIG_FORCE=y would reject unsigned .ko modules. Keep it disabled for OP15 unsigned-module testing."
+            exit 1
+          fi
+
+          if grep -qx 'CONFIG_MODULE_SIG_ALL=y' "$CONFIG_FILE"; then
+            echo "::error::CONFIG_MODULE_SIG_ALL=y signs every built module. For OP15 non-GKI/vendor module testing, keep it disabled."
+            exit 1
+          fi
+
+          if find "$KERNEL_PLATFORM_FOLDER" \
+              \( -path '*/.git/*' -o -path '*/.repo/*' -o -path '*/out/*' -o -path '*/bazel-*/*' \) -prune -o \
+              -type f \( -name '*.config' -o -name '*.cfg' -o -name '*.dts' -o -name '*.dtsi' -o -name '*.cmdline' -o -name '*.bootconfig' -o -name 'build.config*' \) \
+              -exec grep -Hn 'module\.sig_enforce=1' {} + 2>/dev/null | tee /tmp/module_sig_enforce_hits.txt; then
+            if [ -s /tmp/module_sig_enforce_hits.txt ]; then
+              echo "::error::module.sig_enforce=1 was found in build inputs. This would force signed-only module loading."
+              exit 1
+            fi
+          fi
+
+          echo "OP15 unsigned-module policy OK: signature support may exist, but enforcement is disabled."
+          echo "::endgroup::"
+        fi
+
         KCFLAGS="$KCFLAGS -Wno-error -pipe ${KCFLAGS_EXTRA}"
         KCPPFLAGS="$KCPPFLAGS -DCONFIG_OPTIMIZE_INLINING"
         

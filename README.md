@@ -193,6 +193,45 @@ Image size: 40974848 bytes
 - Flash/test the AK3 first.
 - Install the Droidspaces KernelSU module only after Android boots.
 
+### Unsigned `.ko` Driver Policy
+
+Android GKI can load unsigned `.ko` modules only when signature enforcement is
+not active and the module uses allowed KMI symbols. Unsigned support is not the
+same thing as "load any driver".
+
+For OP15 `android16-6.12.23`, the workflow now disables `MODULE_SIG_FORCE` and
+`MODULE_SIG_ALL` before `olddefconfig`, then validates the final `.config` and
+fails the build if unsafe enforcement is found:
+
+```text
+CONFIG_MODULE_SIG_FORCE=y
+CONFIG_MODULE_SIG_ALL=y
+module.sig_enforce=1
+```
+
+`CONFIG_MODULE_SIG=y` may still exist. That only enables module signature
+support. It does not by itself force signed-only loading. The dangerous setting
+for unsigned modules is `CONFIG_MODULE_SIG_FORCE=y` or the boot parameter
+`module.sig_enforce=1`.
+
+Before testing an external driver on the phone:
+
+```sh
+zcat /proc/config.gz | grep MODULE_SIG
+cat /proc/cmdline
+modinfo driver.ko
+insmod driver.ko
+dmesg | tail -n 80
+```
+
+If loading fails, read `dmesg` first:
+
+- signature/enforcement error: check `CONFIG_MODULE_SIG_FORCE` and
+  `module.sig_enforce=1`.
+- `vermagic` error: rebuild the module for the exact running kernel.
+- unknown symbol/KMI error: the driver uses symbols not exported through the
+  allowed KMI surface and must be fixed or rebuilt against allowed symbols.
+
 ### Latest Recovery Reference
 
 The recovery build that removed the global Droidspaces configs was generated
