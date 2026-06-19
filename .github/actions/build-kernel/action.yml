@@ -892,16 +892,10 @@ runs:
           sed -i 's/#if defined(CONFIG_STACKPROTECTOR) && (defined(CONFIG_ARM64) && !defined(CONFIG_STACKPROTECTOR_PER_TASK))/#if 0/' ksu.c
         fi
         
-        if [ -f feature/selinux_hide.c ]; then
-          echo "Patching feature/selinux_hide.c to expose SUSFS SELinux functions..."
-          sed -i 's/static int security_context_to_sid_with_policy/int security_context_to_sid_with_policy/g' feature/selinux_hide.c
-          sed -i 's/static int security_sid_to_context_with_policy/int security_sid_to_context_with_policy/g' feature/selinux_hide.c
-          sed -i 's/static void security_compute_av_user_with_policy/void security_compute_av_user_with_policy/g' feature/selinux_hide.c
-          sed -i 's/static void __nocfi security_compute_av_user_with_policy/void __nocfi security_compute_av_user_with_policy/g' feature/selinux_hide.c
-        fi
-
         if [[ "$KSU_VERSION" -gt 33095 ]] && [[ "${{ env.KERNEL_VER }}" == "6.12" ]]; then
-          sed -i 's|ccflags-y += -I$(KSU_KERNEL_DIR) -I$(KSU_KERNEL_DIR)/include|ccflags-y += -I$(srctree)/drivers/kernelsu -I$(srctree)/drivers/kernelsu/include -I$(srctree)/drivers/kernelsu/include/uapi|' Kbuild
+          sed -i 's|ccflags-y += -I$(KSU_KERNEL_DIR) -I$(KSU_KERNEL_DIR)/include|ccflags-y += -I$(KSU_KERNEL_DIR) -I$(KSU_KERNEL_DIR)/include -I$(KSU_KERNEL_DIR)/include/uapi|' Kbuild
+          sed -i 's|$(src)|$(abspath $(src))|' Kbuild
+          sed -i 's|$(srctree)/$(src)|$(abspath $(srctree)/$(src))|' Kbuild
         fi
         
         if [ "$KSU_VERSION" -lt 12884 ]; then
@@ -913,14 +907,6 @@ runs:
         cd ..
         KSU_COMMIT_SHA=$(git rev-parse HEAD)
         echo "KSU_COMMIT_SHA=$KSU_COMMIT_SHA" >> $GITHUB_ENV
-        
-        echo "Physically copying KernelSU Next files for compilation stability..."
-        rm -rf "$COMMON_KERNEL_FOLDER/drivers/kernelsu"
-        cp -r kernel "$COMMON_KERNEL_FOLDER/drivers/kernelsu"
-        rm -rf "$COMMON_KERNEL_FOLDER/drivers/kernelsu/include/uapi" || true
-        mkdir -p "$COMMON_KERNEL_FOLDER/drivers/kernelsu/include/uapi"
-        cp -r uapi/* "$COMMON_KERNEL_FOLDER/drivers/kernelsu/include/uapi/"
-        
         echo "Add KSUN Configuration Settings"
         cat >> "$COMMON_KERNEL_FOLDER/arch/arm64/configs/gki_defconfig" <<EOF
         CONFIG_KSU=y
@@ -1042,11 +1028,7 @@ runs:
               patch -p1 --forward < "$SUSFS_FOLDER/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch" || true
               for file in $(find ./kernel -maxdepth 2 -name "*.rej" -exec basename {} .rej \;); do
                 echo "Patching file: $file with fix_$file.patch"
-                if [ -f "$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version/fix_$file.patch" ]; then
-                  patch -p1 --forward < "$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version/fix_$file.patch"
-                else
-                  echo "Warning: fix_$file.patch not found, skipping..."
-                fi
+                patch -p1 --forward < "$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version/fix_$file.patch"
               done
               echo "Patching Hook Mode!"
               patch -p1 --forward < "$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version/overwrite_hook_mode.patch"
@@ -1069,75 +1051,9 @@ runs:
             if [ "${{ inputs.ksu_type }}" = "KSUN" ]; then
               cd "$KSUN_FOLDER"
               patch -p1 --forward < "$SUSFS_FOLDER/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch" || true
-              
-              # Dynamically write the missing fix_dispatch.c.patch, fix_app_profile.c.patch, and fix_boot_event.c.patch
-              echo "Creating missing fix patches dynamically..."
-              mkdir -p "$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version"
-
-              PATCH_FILE="$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version/fix_dispatch.c.patch"
-              echo 'diff --git a/kernel/supercall/dispatch.c b/kernel/supercall/dispatch.c' > $PATCH_FILE
-              echo 'index a352b2b1..950a9df4 100644' >> $PATCH_FILE
-              echo '--- a/kernel/supercall/dispatch.c' >> $PATCH_FILE
-              echo '+++ b/kernel/supercall/dispatch.c' >> $PATCH_FILE
-              echo '@@ -4,6 +4,8 @@' >> $PATCH_FILE
-              echo ' #include <linux/string.h>' >> $PATCH_FILE
-              echo ' #include <linux/uaccess.h>' >> $PATCH_FILE
-              echo ' #include <linux/version.h>' >> $PATCH_FILE
-              echo '+#include <linux/namei.h>' >> $PATCH_FILE
-              echo '+#include <linux/susfs.h>' >> $PATCH_FILE
-              echo ' ' >> $PATCH_FILE
-              echo ' #include "uapi/supercall.h"' >> $PATCH_FILE
-
-              PATCH_FILE="$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version/fix_app_profile.c.patch"
-              echo 'diff --git a/kernel/policy/app_profile.c b/kernel/policy/app_profile.c' > $PATCH_FILE
-              echo 'index ef1611f2..7bfb0e34 100644' >> $PATCH_FILE
-              echo '--- a/kernel/policy/app_profile.c' >> $PATCH_FILE
-              echo '+++ b/kernel/policy/app_profile.c' >> $PATCH_FILE
-              echo '@@ -118,10 +118,6 @@ int escape_with_root_profile(void)' >> $PATCH_FILE
-              echo '         return -ENOMEM;' >> $PATCH_FILE
-              echo '     }' >> $PATCH_FILE
-              echo ' ' >> $PATCH_FILE
-              echo '-    if (cred->euid.val == 0) {' >> $PATCH_FILE
-              echo '-        pr_warn("Already root, don'\''t escape!\n");' >> $PATCH_FILE
-              echo '-        goto out_abort_creds;' >> $PATCH_FILE
-              echo '-    }' >> $PATCH_FILE
-              echo ' ' >> $PATCH_FILE
-              echo '     profile = ksu_get_root_profile(cred->uid.val);' >> $PATCH_FILE
-              echo ' ' >> $PATCH_FILE
-              echo '@@ -180,11 +176,8 @@ int escape_with_root_profile(void)' >> $PATCH_FILE
-              echo ' ' >> $PATCH_FILE
-              echo '     commit_creds(cred);' >> $PATCH_FILE
-              echo ' ' >> $PATCH_FILE
-              echo '-    disable_seccomp();' >> $PATCH_FILE
-              echo '-' >> $PATCH_FILE
-              echo '-    for_each_thread (p, t) {' >> $PATCH_FILE
-              echo '-        ksu_set_task_tracepoint_flag(t);' >> $PATCH_FILE
-              echo '-    }' >> $PATCH_FILE
-              echo '+    if (likely(test_thread_flag(TIF_SECCOMP)))' >> $PATCH_FILE
-              echo '+        disable_seccomp();' >> $PATCH_FILE
-              echo ' ' >> $PATCH_FILE
-              echo '     setup_mount_ns(profile->namespaces);' >> $PATCH_FILE
-              echo '     ksu_put_root_profile(profile);' >> $PATCH_FILE
-
-              PATCH_FILE="$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version/fix_boot_event.c.patch"
-              echo 'diff --git a/kernel/runtime/boot_event.c b/kernel/runtime/boot_event.c' > $PATCH_FILE
-              echo '--- a/kernel/runtime/boot_event.c' >> $PATCH_FILE
-              echo '+++ b/kernel/runtime/boot_event.c' >> $PATCH_FILE
-              echo '@@ -13,6 +13,7 @@' >> $PATCH_FILE
-              echo ' ' >> $PATCH_FILE
-              echo ' bool ksu_module_mounted __read_mostly = false;' >> $PATCH_FILE
-              echo ' bool ksu_boot_completed __read_mostly = false;' >> $PATCH_FILE
-              echo '+extern struct static_key_true ksu_is_input_hook_enabled;' >> $PATCH_FILE
-              echo ' ' >> $PATCH_FILE
-              echo ' extern void ksu_avc_spoof_late_init(void);' >> $PATCH_FILE
-
               for file in $(find ./kernel -maxdepth 2 -name "*.rej" -exec basename {} .rej \;); do
                 echo "Patching file: $file with fix_$file.patch"
-                if [ -f "$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version/fix_$file.patch" ]; then
-                  patch -p1 --forward < "$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version/fix_$file.patch"
-                else
-                  echo "Warning: fix_$file.patch not found, skipping..."
-                fi
+                patch -p1 --forward < "$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version/fix_$file.patch"
               done
               echo "Patching Hook Mode!"
               patch -p1 --forward < "$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version/overwrite_hook_mode.patch"
@@ -1162,18 +1078,6 @@ runs:
             ;;
         esac
 
-        if [ "${{ inputs.ksu_type }}" = "KSUN" ] && [ -f "$KSUN_FOLDER/kernel/feature/sucompat.c" ]; then
-          SUCOMPAT_FILE="$KSUN_FOLDER/kernel/feature/sucompat.c"
-          if grep -q 'susfs_is_current_proc_umounted\|susfs_set_current_proc_umounted' "$SUCOMPAT_FILE" && ! grep -qF '#include <linux/susfs_def.h>' "$SUCOMPAT_FILE"; then
-            echo "Adding missing SUSFS helper include to sucompat.c"
-            sed -i '/#include <linux\/ptrace.h>/a #include <linux/susfs_def.h>' "$SUCOMPAT_FILE"
-          fi
-          if grep -q 'is_init(get_current_cred())' "$SUCOMPAT_FILE" && ! grep -qF '#include "selinux/selinux.h"' "$SUCOMPAT_FILE"; then
-            echo "Adding missing SELinux helper include to sucompat.c"
-            sed -i '/#include "policy\/allowlist.h"/i #include "selinux/selinux.h"' "$SUCOMPAT_FILE"
-          fi
-        fi
-        
         cd "$COMMON_KERNEL_FOLDER"
         if [ "${{ env.ANDROID_VER }}" = "android15" ] && [ "${{ env.KERNEL_VER }}" = "6.6" ]; then
           if ! grep -qxF '#include <trace/hooks/fs.h>' ./fs/namespace.c; then
@@ -2052,8 +1956,8 @@ runs:
         if ! grep -q '6\.12\*) ksu_supported=true' anykernel.sh; then
           sed -i '/6\.6\*) ksu_supported=true ;;/a\    6.12*) ksu_supported=true ;;' anykernel.sh
         fi
-        if ! grep -q 'chmod -R 755.*AKHOME.*/tools' anykernel.sh; then
-          perl -0pi -e 's/(^\. tools\/ak3-core\.sh\n)/$1\nsync\nsleep 0.5\nchmod -R 755 "\${AKHOME}\/tools"\n/m' anykernel.sh
+        if ! grep -q 'chmod -R 755 "\${AKHOME}/tools"' anykernel.sh; then
+          sed -i '/^\\. tools\/ak3-core\.sh/a\\nsync\nsleep 0.5\nchmod -R 755 "${AKHOME}/tools"' anykernel.sh
         fi
         
         ZIP_MODEL=$(echo "$OP_MODEL" | sed 's/-[0-9]\+\.[0-9]\+\.[0-9]\+$//')
