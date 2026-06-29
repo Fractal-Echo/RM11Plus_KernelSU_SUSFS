@@ -66,6 +66,9 @@ allow system_server droidspacesd fifo_file write
 allow untrusted_app_27 droidspacesd fd use
 allow untrusted_app_27 droidspacesd fifo_file write
 
+# for Android bridge fd passing on Android 16+ app domains
+allow untrusted_app droidspacesd fd use
+
 # for pulseAudio
 allow audioserver droidspacesd binder { call transfer }
 allow audioserver droidspacesd fd use
